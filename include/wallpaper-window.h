@@ -17,7 +17,7 @@ private:
     HWND hWnd;
 
     AVFormatContext *fmt_ctx = nullptr;
-    const AVCodec *codec = nullptr;
+    AVCodec *codec = nullptr;
     AVCodecContext *codeCtx = nullptr;
     AVStream *stream = nullptr;
     AVPacket avpkt = {};

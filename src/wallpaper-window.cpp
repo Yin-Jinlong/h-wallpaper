@@ -1,5 +1,10 @@
 #include <wallpaper-window.h>
 
+#include "str-utils.h"
+
+#define PMID_EXIT 0
+#define PMID_CHANGE 1
+
 extern WallpaperWindow *wallpaperWindow;
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -74,6 +79,9 @@ void WallpaperWindow::SetToDesktop() {
 void WallpaperWindow::SetVideo(std::string file) {
     if (frame) {
         closeVideo();
+        frameTime = 0;
+        nowTime = 0;
+        frame_count = 0;
     }
 
     if (avformat_open_input(&fmt_ctx, file.c_str(), nullptr, nullptr)) {
@@ -83,12 +91,12 @@ void WallpaperWindow::SetVideo(std::string file) {
         error(L"Could not find stream info");
     }
     // av_dump_format(fmt_ctx, 0, file.c_str(), 0);
-    av_new_packet(&avpkt, 4096);
+    av_new_packet(&avpkt, 1024 * 4);
     if (av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0) < 0) {
         error(L"Could not find video stream");
     }
     stream = fmt_ctx->streams[stream_index];
-    codec = avcodec_find_decoder(stream->codecpar->codec_id);
+    codec = (AVCodec *) avcodec_find_decoder(stream->codecpar->codec_id);
     if (!codec) {
         error(L"Could not find video codec");
     }
@@ -126,17 +134,24 @@ void WallpaperWindow::ReadFrame() {
         return;
     auto t = av_q2d(stream->time_base) * frame->duration;
     frameTime += t;
+    start:
     int r = av_read_frame(fmt_ctx, &avpkt);
     if (r >= 0) {
         if (avpkt.stream_index == stream_index) {
-            int re = avcodec_send_packet(codeCtx, &avpkt);
-            if (re < 0) {
-                return;
+            int err;
+            load:
+            err = avcodec_send_packet(codeCtx, &avpkt);
+            if (err == -1094995529)
+                goto start;
+
+            err = avcodec_receive_frame(codeCtx, frame);
+            if (err == AVERROR(EAGAIN))
+                goto load;
+            else if (err != 0) {
+                WCHAR err_str[256];
+                swprintf_s(err_str, 256, L"%d", err);
+                error(err_str);
             }
-
-            // 这里必须用while()，因为一次avcodec_receive_frame可能无法接收到所有数据
-            while (avcodec_receive_frame(codeCtx, frame) != 0);
-
             frame_count++;
         }
         av_packet_unref(&avpkt);
@@ -209,26 +224,94 @@ void WallpaperWindow::paint(HWND hWnd, HDC hdc) {
 }
 
 DEVMODE dm;
+HMENU trayMenu;
+NOTIFYICONDATA nid;
+
+double lastTime = 0;
+
+double toTime(SYSTEMTIME t) {
+    return (t.wHour * 3600 + t.wMinute * 60 + t.wSecond) + t.wMilliseconds / 1000.0;
+}
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_CREATE: {
             dm.dmSize = sizeof(DEVMODE);
             EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
+
+            nid.cbSize = sizeof(nid);
+            nid.hWnd = hWnd;
+            nid.uID = 0;
+            nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+            nid.uCallbackMessage = WM_USER;
+            nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+            lstrcpy(nid.szTip, "h-wallpaper");
+            Shell_NotifyIcon(NIM_ADD, &nid);
+
+            trayMenu = CreatePopupMenu();
+            AppendMenuW(trayMenu, MF_STRING, PMID_CHANGE, L"选择文件");
+            AppendMenuW(trayMenu, MF_STRING, PMID_EXIT, L"退出");
+            Shell_NotifyIcon(NIM_ADD, &nid);
             break;
         }
         case WM_PAINT: {
+
+            SYSTEMTIME now;
+            GetSystemTime(&now);
+            double dt = toTime(now) - lastTime;
+            if (lastTime == 0) {
+                dt = 1.0 / dm.dmDisplayFrequency;
+            }
+            lastTime = toTime(now);
+
+            wallpaperWindow->nowTime += dt;
             wallpaperWindow->ReadFrame();
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             wallpaperWindow->paint(hWnd, hdc);
             EndPaint(hWnd, &ps);
             InvalidateRect(hWnd, nullptr, FALSE);
-            wallpaperWindow->nowTime += 1.0 / dm.dmDisplayFrequency;
+            break;
+        }
+        case WM_USER: {
+            POINT pt;
+            if (lParam == WM_RBUTTONDOWN) {
+                GetCursorPos(&pt);
+                SetForegroundWindow(hWnd);
+                int id = TrackPopupMenuEx(trayMenu, TPM_RETURNCMD, pt.x, pt.y, hWnd, nullptr);
+                switch (id) {
+                    case PMID_EXIT:
+                        PostQuitMessage(0);
+                        break;
+                    case PMID_CHANGE: {
+
+                        OPENFILENAMEW ofn;
+                        WCHAR szFile[260];
+
+                        ZeroMemory(&ofn, sizeof(ofn));
+                        ofn.lStructSize = sizeof(ofn);
+                        ofn.hwndOwner = hWnd;
+                        ofn.lpstrFile = szFile;
+                        ofn.lpstrFile[0] = '\0';
+                        ofn.nMaxFile = sizeof(szFile);
+                        ofn.lpstrFilter = L"video(*.mp4)\0*.mp4\0\0";
+                        ofn.nFilterIndex = 1;
+                        ofn.lpstrFileTitle = nullptr;
+                        ofn.nMaxFileTitle = 0;
+                        ofn.lpstrInitialDir = nullptr;
+                        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+                        if (GetOpenFileNameW(&ofn)) {
+                            wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
+                        }
+                        break;
+                    }
+                }
+            }
             break;
         }
         case WM_DESTROY:
             PostQuitMessage(0);
+            Shell_NotifyIcon(NIM_DELETE, &nid);
             break;
         default:
             return DefWindowProcW(hWnd, msg, wParam, lParam);
