@@ -2,6 +2,8 @@
 
 #include <pre.h>
 
+#include "video-decoder.h"
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -16,16 +18,7 @@ private:
 
     HWND hWnd;
 
-    AVFormatContext *fmt_ctx = nullptr;
-    AVCodec *codec = nullptr;
-    AVCodecContext *codeCtx = nullptr;
-    AVStream *stream = nullptr;
-    AVPacket avpkt = {};
-    AVFrame *frame = nullptr;
-    int stream_index = 0;
-    int frame_count = 0;
-
-    void closeVideo();
+    VideoDecoder *decoder = nullptr;
 
 public:
     double frameTime = 0;
@@ -40,8 +33,6 @@ public:
     void SetToDesktop();
 
     void SetVideo(std::string file);
-
-    void ReadFrame();
 
     void paint(HWND hWnd, HDC hdc);
 };
