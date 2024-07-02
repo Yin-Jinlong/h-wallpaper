@@ -163,15 +163,15 @@ void VideoDecoder::close() {
 bool VideoDecoder::addFrame() {
     struct SwsContext *img_convert_ctx = sws_getContext(
             frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
-            frame->width, frame->height, AV_PIX_FMT_BGR24,
+            width, height, AV_PIX_FMT_BGR24,
             SWS_BILINEAR, nullptr, nullptr, nullptr);
 
     if (!img_convert_ctx)
         error(L"Could not initialize the conversion context");
 
     AVFrame *rgbFrame = av_frame_alloc();
-    rgbFrame->width = frame->width;
-    rgbFrame->height = frame->height;
+    rgbFrame->width = width;
+    rgbFrame->height = height;
     rgbFrame->format = AV_PIX_FMT_BGR24;
     av_frame_get_buffer(rgbFrame, 32);
 
@@ -180,13 +180,18 @@ bool VideoDecoder::addFrame() {
               (const uint8_t *const *) frame->data, frame->linesize, 0, frame->height,
               rgbFrame->data, rgbFrame->linesize);
 
+
     struct VideoFrame vf = {
             .bitmap = avframe_to_hbitmap(rgbFrame),
-            .width = frame->width,
-            .height = frame->height,
-            .pts = frame->pts,
-            .duration = frame->duration
+            .width = rgbFrame->width,
+            .height = rgbFrame->height,
+            .pts = rgbFrame->pts,
+            .duration = rgbFrame->duration
     };
+
+
+    av_frame_free(&rgbFrame);
+    sws_freeContext(img_convert_ctx);
 
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait(lock, [this] { return !running() || frames.size() < 60; });
@@ -199,9 +204,6 @@ bool VideoDecoder::addFrame() {
         return false;
     }
     lock.unlock();
-
-    av_frame_free(&rgbFrame);
-    sws_freeContext(img_convert_ctx);
     return true;
 }
 

@@ -45,6 +45,9 @@ private:
     std::atomic<DecoderThread *> threadPtr = nullptr;
 
 public:
+
+    int width = -1, height = -1;
+
     AVRational time_base = {0};
 
     explicit VideoDecoder(const std::string &file);

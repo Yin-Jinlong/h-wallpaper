@@ -5,7 +5,7 @@
 #define PMID_EXIT 0
 #define PMID_CHANGE 1
 
-extern WallpaperWindow *wallpaperWindow;
+WallpaperWindow *wallpaperWindow;
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -31,6 +31,7 @@ void RegisterWndClass(HINSTANCE hInstance) {
 
 WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
     RegisterWndClass(hInstance);
+    wallpaperWindow = this;
 
     hWnd = CreateWindowExW(0,
                            L"YJL-WALLPAPER", L"YJL_WALLPAPER",
@@ -87,16 +88,23 @@ void WallpaperWindow::SetVideo(std::string file) {
     lastTime = 0;
     try {
         decoder = new VideoDecoder(file);
+        //**************************//
+        // 到此步屏幕（窗口）尺寸已经有了 //
+        // 前面WM_SIZE已经处理过了     //
+        //**************************//
+        decoder->width = width;
+        decoder->height = height;
         decoderPtr.store(decoder);
         decoder->startDecode();
     } catch (std::exception &e) {
         decoderPtr.store(nullptr);
     }
+    InvalidateRect(hWnd, nullptr, false);
 }
 
 WallpaperWindow::~WallpaperWindow() = default;
 
-void WallpaperWindow::paint(HWND hWnd, HDC hdc) {
+void WallpaperWindow::paint(HDC hdc) {
     auto decoder = decoderPtr.load();
     if (!decoder || frameTime > nowTime)
         return;
@@ -113,14 +121,12 @@ void WallpaperWindow::paint(HWND hWnd, HDC hdc) {
 
     SelectObject(mdc, hBitmap);
 
-    RECT rect;
-    GetWindowRect(hWnd, &rect);
-
-    StretchBlt(hdc, 0, 0, rect.right, rect.bottom,
-               mdc, 0, 0, vf->width, vf->height,
-               SRCCOPY
-    );
-
+    // 缩放已经处理，用BitBlt更高效
+    //StretchBlt(hdc, 0, 0, width, height,
+    //           mdc, 0, 0, vf->width, vf->height,
+    //           SRCCOPY
+    //);
+    BitBlt(hdc, 0, 0, vf->width, vf->height, mdc, 0, 0, SRCCOPY);
     DeleteObject(hBitmap);
     DeleteDC(mdc);
 }
@@ -133,6 +139,11 @@ bool WallpaperWindow::decoderAvailable() {
 bool WallpaperWindow::firstFrameLoaded() {
     auto decoder = decoderPtr.load();
     return decoder && decoder->firstFrameLoaded();
+}
+
+void WallpaperWindow::SetSize(int width, int height) {
+    this->width = width;
+    this->height = height;
 }
 
 DEVMODE dm;
@@ -164,6 +175,13 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             Shell_NotifyIcon(NIM_ADD, &nid);
             break;
         }
+        case WM_SIZE:
+            //*********************************//
+            // 在设置系统缩放后，创建窗口时会调用两次 //
+            // 第二次的尺寸才是正确的              //
+            //********************************//
+            wallpaperWindow->SetSize(LOWORD(lParam), HIWORD(lParam));
+            break;
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
@@ -190,7 +208,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
             wallpaperWindow->lastTime = toTime(now);
             wallpaperWindow->nowTime += dt;
-            wallpaperWindow->paint(hWnd, hdc);
+            wallpaperWindow->paint(hdc);
             EndPaint(hWnd, &ps);
             break;
         }

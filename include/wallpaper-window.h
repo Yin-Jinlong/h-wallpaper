@@ -20,6 +20,8 @@ private:
 
     std::atomic<VideoDecoder *> decoderPtr = nullptr;
 
+    int width = 0, height = 0;
+
 public:
     double frameTime = 0;
     double nowTime = 0;
@@ -35,9 +37,11 @@ public:
 
     void SetVideo(std::string file);
 
-    void paint(HWND hWnd, HDC hdc);
+    void paint(HDC hdc);
 
     bool decoderAvailable();
 
     bool firstFrameLoaded();
+
+    void SetSize(int width, int height);
 };
