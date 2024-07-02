@@ -31,19 +31,21 @@ private:
     int stream_index = 0;
     int frame_count = 0;
 
-    bool run = true;
-
     std::mutex mtx;
     std::condition_variable cv;
 
-    std::queue<VideoFrame> frmaes;
+    std::queue<VideoFrame> frames;
 
     void _decode();
 
-    void addFrame();
+    bool addFrame();
+
+    class DecoderThread;
+
+    std::atomic<DecoderThread *> threadPtr = nullptr;
 
 public:
-    AVRational time_base;
+    AVRational time_base = {0};
 
     explicit VideoDecoder(const std::string &file);
 
@@ -53,7 +55,11 @@ public:
 
     void close();
 
-    VideoFrame* getFrame();
+    VideoFrame *getFrame();
 
     int getFrameCount();
+
+    bool running() const;
+
+    bool firstFrameLoaded() const;
 };

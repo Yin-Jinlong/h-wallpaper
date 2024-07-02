@@ -16,13 +16,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     wallpaperWindow = new WallpaperWindow(hInstance);
 
     wallpaperWindow->SetToDesktop();
-    wallpaperWindow->Show();
-
-    MSG msg;
 
     if (argc > 1)
         wallpaperWindow->SetVideo(wstring2string(args[1]));
-
+    wallpaperWindow->Show();
+    MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);

@@ -76,19 +76,28 @@ void WallpaperWindow::SetToDesktop() {
 }
 
 void WallpaperWindow::SetVideo(std::string file) {
+    auto decoder = decoderPtr.load();
     if (decoder) {
         decoder->close();
         delete decoder;
+        decoderPtr.store(nullptr);
     }
-    decoder = new VideoDecoder(file);
-    decoder->startDecode();
+    nowTime = 0;
+    frameTime = 0;
+    lastTime = 0;
+    try {
+        decoder = new VideoDecoder(file);
+        decoderPtr.store(decoder);
+        decoder->startDecode();
+    } catch (std::exception &e) {
+        decoderPtr.store(nullptr);
+    }
 }
 
-WallpaperWindow::~WallpaperWindow() {
-    delete decoder;
-}
+WallpaperWindow::~WallpaperWindow() = default;
 
 void WallpaperWindow::paint(HWND hWnd, HDC hdc) {
+    auto decoder = decoderPtr.load();
     if (!decoder || frameTime > nowTime)
         return;
 
@@ -116,11 +125,19 @@ void WallpaperWindow::paint(HWND hWnd, HDC hdc) {
     DeleteDC(mdc);
 }
 
+bool WallpaperWindow::decoderAvailable() {
+    auto decoder = decoderPtr.load();
+    return decoder && decoder->running();
+}
+
+bool WallpaperWindow::firstFrameLoaded() {
+    auto decoder = decoderPtr.load();
+    return decoder && decoder->firstFrameLoaded();
+}
+
 DEVMODE dm;
 HMENU trayMenu;
 NOTIFYICONDATA nid;
-
-double lastTime = 0;
 
 double toTime(SYSTEMTIME t) {
     return (t.wHour * 3600 + t.wMinute * 60 + t.wSecond) + t.wMilliseconds / 1000.0;
@@ -148,20 +165,33 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             break;
         }
         case WM_PAINT: {
-            SYSTEMTIME now;
-            GetSystemTime(&now);
-            double dt = toTime(now) - lastTime;
-            if (lastTime == 0) {
-                dt = 1.0 / dm.dmDisplayFrequency;
-            }
-            lastTime = toTime(now);
-
-            wallpaperWindow->nowTime += dt;
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
+            if (!wallpaperWindow->decoderAvailable()) {
+                HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+                FillRect(hdc, &ps.rcPaint, hBrush);
+                DeleteObject(hBrush);
+                EndPaint(hWnd, &ps);
+                break;
+            }
+
+            InvalidateRect(hWnd, nullptr, FALSE);
+
+            if (!wallpaperWindow->firstFrameLoaded()) {
+                EndPaint(hWnd, &ps);
+                break;
+            }
+
+            SYSTEMTIME now;
+            GetSystemTime(&now);
+            double dt = toTime(now) - wallpaperWindow->lastTime;
+            if (wallpaperWindow->lastTime == 0) {
+                dt = 1.0 / dm.dmDisplayFrequency;
+            }
+            wallpaperWindow->lastTime = toTime(now);
+            wallpaperWindow->nowTime += dt;
             wallpaperWindow->paint(hWnd, hdc);
             EndPaint(hWnd, &ps);
-            InvalidateRect(hWnd, nullptr, FALSE);
             break;
         }
         case WM_USER: {
@@ -193,6 +223,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
                         if (GetOpenFileNameW(&ofn)) {
                             wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
+                            InvalidateRect(hWnd, nullptr, FALSE);
                         }
                         break;
                     }

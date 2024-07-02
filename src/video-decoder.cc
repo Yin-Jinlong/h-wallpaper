@@ -2,6 +2,45 @@
 
 #include <thread>
 
+
+class VideoDecoder::DecoderThread : public std::thread {
+
+private:
+    std::atomic<bool> run{true};
+
+    VideoDecoder *decoder;
+
+public:
+
+    explicit DecoderThread(VideoDecoder *decoder) : std::thread([this]() {
+        decodeRun();
+    }) {
+        this->decoder = decoder;
+    }
+
+    ~DecoderThread() = default;
+
+    void decodeRun() {
+        while (run.load()) {
+            try {
+                decoder->_decode();
+            } catch (...) {
+                break;
+            }
+        }
+    }
+
+    void stop() {
+        run.store(false);
+        decoder->cv.notify_all();
+        join();
+    }
+
+    [[nodiscard]] bool running() const {
+        return run.load();
+    }
+};
+
 VideoDecoder::VideoDecoder(const std::string &file) {
     if (avformat_open_input(&fmt_ctx, file.c_str(), nullptr, nullptr)) {
         error(L"Could not open file");
@@ -73,49 +112,48 @@ HBITMAP avframe_to_hbitmap(AVFrame *frame) {
 }
 
 void VideoDecoder::_decode() {
-    while (run) {
-        std::unique_lock<std::mutex> lck(mtx);
-        cv.wait(lck, [this] { return frmaes.size() < 60; });
 
-        start:
-        int r = av_read_frame(fmt_ctx, &avpkt);
-        if (r >= 0) {
-            if (avpkt.stream_index == stream_index) {
-                int err;
-                load:
-                err = avcodec_send_packet(codeCtx, &avpkt);
-                if (err == -1094995529)
-                    goto start;
+    start:
+    int r = av_read_frame(fmt_ctx, &avpkt);
+    if (r >= 0) {
+        if (avpkt.stream_index == stream_index) {
+            int err;
+            load:
+            err = avcodec_send_packet(codeCtx, &avpkt);
+            if (err == -1094995529)
+                goto start;
 
-                err = avcodec_receive_frame(codeCtx, frame);
-                if (err == AVERROR(EAGAIN))
-                    goto load;
-                else if (err != 0) {
-                    WCHAR err_str[256];
-                    swprintf_s(err_str, 256, L"%d", err);
-                    error(err_str);
-                }
-                frame_count++;
-                addFrame();
+            err = avcodec_receive_frame(codeCtx, frame);
+            if (err == AVERROR(EAGAIN))
+                goto load;
+            else if (err != 0) {
+                WCHAR err_str[256];
+                swprintf_s(err_str, 256, L"%d", err);
+                error(err_str);
             }
-            av_packet_unref(&avpkt);
-        } else if (r == AVERROR_EOF) {
-            av_seek_frame(fmt_ctx, 0, 0, AVSEEK_FLAG_BACKWARD);
+            if (!addFrame())
+                return;
         }
+        av_packet_unref(&avpkt);
+    } else if (r == AVERROR_EOF) {
+        av_seek_frame(fmt_ctx, 0, 0, AVSEEK_FLAG_BACKWARD);
     }
 }
 
 void VideoDecoder::startDecode() {
-    std::thread([this]() {
-        _decode();
-    }).detach();
+    threadPtr.store(new DecoderThread(this));
 }
 
 void VideoDecoder::close() {
-    run = false;
+    auto thread = threadPtr.load();
+    if (thread) {
+        thread->stop();
+        delete thread;
+        threadPtr.store(nullptr);
+    }
 }
 
-void VideoDecoder::addFrame() {
+bool VideoDecoder::addFrame() {
     struct SwsContext *img_convert_ctx = sws_getContext(
             frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
             frame->width, frame->height, AV_PIX_FMT_BGR24,
@@ -139,22 +177,45 @@ void VideoDecoder::addFrame() {
             .pts = frame->pts,
             .duration = frame->duration
     };
-    frmaes.push(vf);
+
+    std::unique_lock<std::mutex> lock(mtx);
+    cv.wait(lock, [this] { return !running() || frames.size() < 60; });
+    auto thread = threadPtr.load();
+    if (thread && thread->running()) {
+        frames.push(vf);
+        frame_count++;
+    } else {
+        lock.unlock();
+        return false;
+    }
+    lock.unlock();
 
     av_frame_free(&rgbFrame);
     sws_freeContext(img_convert_ctx);
+    return true;
 }
 
 VideoFrame *VideoDecoder::getFrame() {
-    std::lock_guard<std::mutex> lck(mtx);
-    if (frmaes.empty())
+    if (frames.empty()) {
         return nullptr;
-    VideoFrame *vf = &frmaes.front();
-    frmaes.pop();
-    cv.notify_one();
+    }
+    std::unique_lock<std::mutex> lock(mtx);
+    VideoFrame *vf = &frames.front();
+    frames.pop();
+    lock.unlock();
+    cv.notify_all();
     return vf;
 }
 
 int VideoDecoder::getFrameCount() {
-    return frmaes.size();
+    return frames.size();
+}
+
+bool VideoDecoder::running() const {
+    auto thread = threadPtr.load();
+    return thread && thread->joinable() && thread->running();
+}
+
+bool VideoDecoder::firstFrameLoaded() const {
+    return frame_count > 0;
 }

@@ -18,11 +18,12 @@ private:
 
     HWND hWnd;
 
-    VideoDecoder *decoder = nullptr;
+    std::atomic<VideoDecoder *> decoderPtr = nullptr;
 
 public:
     double frameTime = 0;
     double nowTime = 0;
+    double lastTime = 0;
 
     explicit WallpaperWindow(HINSTANCE hInstance);
 
@@ -35,4 +36,8 @@ public:
     void SetVideo(std::string file);
 
     void paint(HWND hWnd, HDC hdc);
+
+    bool decoderAvailable();
+
+    bool firstFrameLoaded();
 };
