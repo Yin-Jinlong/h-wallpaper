@@ -28,7 +28,7 @@ private:
     AVStream *stream = nullptr;
     AVPacket avpkt = {};
     AVFrame *frame = nullptr;
-    int stream_index = 0;
+    int stream_index = -1;
     int frame_count = 0;
 
     std::mutex mtx;

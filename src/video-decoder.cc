@@ -53,6 +53,19 @@ VideoDecoder::VideoDecoder(const std::string &file) {
     if (av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0) < 0) {
         error(L"Could not find video stream");
     }
+
+    // 寻找视频流
+    for (int i = 0; i < fmt_ctx->nb_streams; i++) {
+        AVStream *st = fmt_ctx->streams[i];
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            stream_index = i;
+            break;
+        }
+    }
+    if (stream_index < 0) {
+        error(L"No video stream found");
+    }
+
     stream = fmt_ctx->streams[stream_index];
     codec = (AVCodec *) avcodec_find_decoder(stream->codecpar->codec_id);
     if (!codec) {
@@ -158,6 +171,9 @@ bool VideoDecoder::addFrame() {
             frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
             frame->width, frame->height, AV_PIX_FMT_BGR24,
             SWS_BILINEAR, nullptr, nullptr, nullptr);
+
+    if (!img_convert_ctx)
+        error(L"Could not initialize the conversion context");
 
     AVFrame *rgbFrame = av_frame_alloc();
     rgbFrame->width = frame->width;
