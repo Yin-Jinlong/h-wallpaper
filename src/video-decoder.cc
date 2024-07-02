@@ -112,14 +112,8 @@ HBITMAP avframe_to_hbitmap(AVFrame *frame) {
 
     HBITMAP hBitmap = CreateDIBSection(hdc, (BITMAPINFO *) &bmiHeader, DIB_RGB_COLORS, NULL, NULL, 0);
 
-    void *bits = malloc(frame->height * frame->width * 3);
-    GetDIBits(hdc, hBitmap, 0, frame->height, bits, (BITMAPINFO *) &bmiHeader, DIB_RGB_COLORS);
-
-    memcpy(bits, frame->data[0], frame->height * frame->width * 3);
-
-    SetDIBits(hdc, hBitmap, 0, frame->height, bits, (BITMAPINFO *) &bmiHeader, DIB_RGB_COLORS);
+    SetDIBits(hdc, hBitmap, 0, frame->height, frame->data[0], (BITMAPINFO *) &bmiHeader, DIB_RGB_COLORS);
     SelectObject(hdc, hBitmap);
-    free(bits);
     ReleaseDC(nullptr, hdc);
     return hBitmap;
 }
