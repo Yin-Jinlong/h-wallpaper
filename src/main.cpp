@@ -1,5 +1,4 @@
-#include <iostream>
-#include <windows.h>
+#include <pre.h>
 
 #include "wallpaper-window.h"
 #include "str-utils.h"

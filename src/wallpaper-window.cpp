@@ -17,7 +17,7 @@ void RegisterWndClass(HINSTANCE hInstance) {
     wndClass.cbClsExtra = 0;
     wndClass.cbWndExtra = 0;
     wndClass.hInstance = hInstance;
-    wndClass.hIcon = ::LoadIcon(nullptr, IDI_APPLICATION);
+    wndClass.hIcon = ::LoadIcon(GetModuleHandleW(nullptr), MAKEINTRESOURCE(IDI_ICON1));
     wndClass.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
     wndClass.hbrBackground = (HBRUSH) ::GetStockObject(BLACK_BRUSH);
     wndClass.lpszMenuName = nullptr;
@@ -165,7 +165,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             nid.uID = 0;
             nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
             nid.uCallbackMessage = WM_USER;
-            nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+            nid.hIcon = LoadIcon(GetModuleHandleW(nullptr), MAKEINTRESOURCE(IDI_ICON1));
             lstrcpy(nid.szTip, "h-wallpaper");
             Shell_NotifyIcon(NIM_ADD, &nid);
 

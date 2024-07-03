@@ -30,6 +30,7 @@ link_directories(
 aux_source_directory("src" SRCS)
 
 add_executable(${PROJECT_NAME} WIN32
+        "resources/resources.rc"
         ${SRCS}
 )
 target_link_libraries(${PROJECT_NAME}

@@ -9,6 +9,8 @@
 
 #include "str-utils.h"
 
+#include "resources.h"
+
 inline void error(WCHAR *msg) {
     MessageBoxExW(NULL, msg, L"Error", MB_OK | MB_ICONERROR, 0);
     throw std::runtime_error(wstring2string(msg));
