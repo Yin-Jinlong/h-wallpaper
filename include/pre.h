@@ -16,6 +16,7 @@
 #define HW_FM_VIDEO L"h-wallpaper-video"
 
 #define WM_APP_VIDEO_FILE (WM_APP+1)
+#define WM_APP_QUERY_MAXIMIZED (WM_APP+2)
 
 inline void error(WCHAR *msg) {
     MessageBoxExW(NULL, msg, L"Error", MB_OK | MB_ICONERROR, 0);

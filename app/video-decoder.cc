@@ -10,6 +10,9 @@ private:
 
     VideoDecoder *decoder;
 
+    std::mutex mutex;
+    std::condition_variable cv;
+
 public:
 
     explicit DecoderThread(VideoDecoder *decoder) : std::thread([this]() {
@@ -23,6 +26,10 @@ public:
     void decodeRun() {
         while (run.load()) {
             try {
+                std::unique_lock<std::mutex> lock(mutex);
+                cv.wait(lock, [this]() {
+                    return !decoder->paused();
+                });
                 decoder->_decode();
             } catch (...) {
                 break;
@@ -34,6 +41,10 @@ public:
         run.store(false);
         decoder->cv.notify_all();
         join();
+    }
+
+    void notify() {
+        cv.notify_all();
     }
 
     [[nodiscard]] bool running() const {
@@ -236,4 +247,20 @@ bool VideoDecoder::running() const {
 
 bool VideoDecoder::firstFrameLoaded() const {
     return frame_count > 0;
+}
+
+bool VideoDecoder::paused() const {
+    return _paused.load();
+}
+
+void VideoDecoder::pause() {
+    _paused.store(true);
+}
+
+void VideoDecoder::resume() {
+    _paused.store(false);
+    auto thread = threadPtr.load();
+    if (thread) {
+        thread->notify();
+    }
 }

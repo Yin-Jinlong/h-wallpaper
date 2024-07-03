@@ -40,7 +40,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
             }
 
             auto fileName = wstring2string(args[1]);
-            strcpy_s(pData, fileName.length()+1, fileName.c_str());
+            strcpy_s(pData, fileName.length() + 1, fileName.c_str());
 
             UnmapViewOfFile(pData);
             CloseHandle(hMapFile);
@@ -59,12 +59,20 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     if (argc > 1)
         wallpaperWindow->SetVideo(wstring2string(args[1]));
 
+    thread queryMaxSizeThread([&]() {
+        while (true) {
+            Sleep(500);
+            wallpaperWindow->PostQueryMaximized();
+        }
+    });
+
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
     delete wallpaperWindow;
+    TerminateThread(queryMaxSizeThread.native_handle(), 0);
     return ERROR_SUCCESS;
 }
 

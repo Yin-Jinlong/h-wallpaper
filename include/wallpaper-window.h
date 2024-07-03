@@ -47,4 +47,12 @@ public:
     bool firstFrameLoaded();
 
     void SetSize(int width, int height);
+
+    bool decoderPaused();
+
+    void pause();
+
+    void resume();
+
+    void PostQueryMaximized();
 };

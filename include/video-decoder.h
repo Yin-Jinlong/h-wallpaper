@@ -36,6 +36,8 @@ private:
 
     std::queue<VideoFrame> frames;
 
+    std::atomic<bool> _paused = false;
+
     void _decode();
 
     bool addFrame();
@@ -65,4 +67,10 @@ public:
     bool running() const;
 
     bool firstFrameLoaded() const;
+
+    void pause();
+
+    void resume();
+
+    bool paused() const;
 };

@@ -1,5 +1,11 @@
 ### IDE ###
 .vscode/
 .idea/
+.vs/
 
 /*build*/
+/out/
+
+
+### IDE Local Settings ###
+/CMakeSettings.json

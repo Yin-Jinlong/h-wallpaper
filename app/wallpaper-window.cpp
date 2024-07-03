@@ -1,6 +1,7 @@
 #include <wallpaper-window.h>
 
 #include "str-utils.h"
+#include "wnd-utils.h"
 
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
@@ -157,6 +158,30 @@ void WallpaperWindow::SetSize(int width, int height) {
     this->height = height;
 }
 
+bool WallpaperWindow::decoderPaused() {
+    auto decoder = decoderPtr.load();
+    return !decoder || decoder->paused();
+}
+
+void WallpaperWindow::pause() {
+    auto decoder = decoderPtr.load();
+    if (decoder) {
+        decoder->pause();
+    }
+}
+
+void WallpaperWindow::resume() {
+    auto decoder = decoderPtr.load();
+    if (decoder) {
+        decoder->resume();
+    }
+    InvalidateRect(hWnd, nullptr, false);
+}
+
+void WallpaperWindow::PostQueryMaximized() {
+    PostMessageW(hWnd, WM_APP_QUERY_MAXIMIZED, 0, 0);
+}
+
 DEVMODE dm;
 HMENU trayMenu;
 NOTIFYICONDATA nid;
@@ -216,6 +241,11 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
                 FillRect(hdc, &ps.rcPaint, hBrush);
                 DeleteObject(hBrush);
+                EndPaint(hWnd, &ps);
+                break;
+            }
+
+            if (wallpaperWindow->decoderPaused()) {
                 EndPaint(hWnd, &ps);
                 break;
             }
@@ -283,6 +313,15 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_QUIT:
             CloseHandle(hMapFile);
             break;
+        case WM_APP_QUERY_MAXIMIZED:
+            if (HasWindowMaximized()) {
+                if (!wallpaperWindow->decoderPaused())
+                    wallpaperWindow->pause();
+            } else {
+                if (wallpaperWindow->decoderPaused())
+                    wallpaperWindow->resume();
+            }
+            break;
         case WM_APP_VIDEO_FILE: {
             char *pData = (char *) MapViewOfFile(
                     hMapFile,
@@ -290,7 +329,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             );
             if (pData) {
                 std::string file;
-                file+=pData;
+                file += pData;
                 UnmapViewOfFile(pData);
                 wallpaperWindow->SetVideo(file);
             }
