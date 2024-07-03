@@ -2,8 +2,8 @@
 
 #include "str-utils.h"
 
-#define PMID_EXIT 0
-#define PMID_CHANGE 1
+#define PMID_EXIT 1
+#define PMID_CHANGE 2
 
 WallpaperWindow *wallpaperWindow;
 
