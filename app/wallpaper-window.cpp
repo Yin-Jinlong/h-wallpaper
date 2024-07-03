@@ -114,7 +114,14 @@ void WallpaperWindow::SetVideo(std::string file) {
     InvalidateRect(hWnd, nullptr, false);
 }
 
-WallpaperWindow::~WallpaperWindow() = default;
+WallpaperWindow::~WallpaperWindow() {
+    auto decoder = decoderPtr.load();
+    if (decoder) {
+        decoder->close();
+        delete decoder;
+        decoderPtr.store(nullptr);
+    }
+}
 
 void WallpaperWindow::paint(HDC hdc) {
     auto decoder = decoderPtr.load();
@@ -298,7 +305,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 int id = TrackPopupMenuEx(trayMenu, TPM_RETURNCMD, pt.x, pt.y, hWnd, nullptr);
                 switch (id) {
                     case PMID_EXIT:
-                        PostQuitMessage(0);
+                        DestroyWindow(hWnd);
                         break;
                     case PMID_CHANGE: {
 
@@ -329,10 +336,8 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
         case WM_DESTROY:
             PostQuitMessage(0);
-            Shell_NotifyIcon(NIM_DELETE, &nid);
-            break;
-        case WM_QUIT:
             CloseHandle(hMapFile);
+            Shell_NotifyIcon(NIM_DELETE, &nid);
             break;
         case WM_APP_QUERY_MAXIMIZED:
             if (HasWindowMaximized()) {

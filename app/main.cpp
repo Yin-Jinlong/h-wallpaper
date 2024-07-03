@@ -11,6 +11,7 @@ void closeMutex() {
     CloseHandle(hMutex);
 }
 
+extern WallpaperWindow *wallpaperWindow;
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 
@@ -51,7 +52,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     }
     atexit(closeMutex);
 
-    auto wallpaperWindow = new WallpaperWindow(hInstance);
+    wallpaperWindow = new WallpaperWindow(hInstance);
 
     wallpaperWindow->SetToDesktop();
     wallpaperWindow->Show();
@@ -59,8 +60,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     if (argc > 1)
         wallpaperWindow->SetVideo(wstring2string(args[1]));
 
-    thread queryMaxSizeThread([&]() {
-        while (true) {
+    std::atomic<bool> queryRun = true;
+
+    thread queryMaximizedThread([&]() {
+        while (queryRun.load()) {
             Sleep(500);
             wallpaperWindow->PostQueryMaximized();
         }
@@ -71,8 +74,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
+    queryRun.store(false);
+    queryMaximizedThread.join();
     delete wallpaperWindow;
-    TerminateThread(queryMaxSizeThread.native_handle(), 0);
     return ERROR_SUCCESS;
 }
 
