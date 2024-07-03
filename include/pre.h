@@ -11,7 +11,7 @@
 
 #include "resources.h"
 
-#define MAX_FRAMES 30
+#define MAX_FRAMES 2
 
 #define HW_FM_VIDEO L"h-wallpaper-video"
 
