@@ -5,6 +5,8 @@
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
 
+static const wchar_t *HWallpaperWindowClassName = L"YJL-WALLPAPER";
+
 WallpaperWindow *wallpaperWindow;
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -21,7 +23,7 @@ void RegisterWndClass(HINSTANCE hInstance) {
     wndClass.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
     wndClass.hbrBackground = (HBRUSH) ::GetStockObject(BLACK_BRUSH);
     wndClass.lpszMenuName = nullptr;
-    wndClass.lpszClassName = L"YJL-WALLPAPER";
+    wndClass.lpszClassName = HWallpaperWindowClassName;
     wndClass.hIconSm = nullptr;
 
     if (!RegisterClassExW(&wndClass)) {
@@ -34,7 +36,7 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
     wallpaperWindow = this;
 
     hWnd = CreateWindowExW(0,
-                           L"YJL-WALLPAPER", L"YJL_WALLPAPER",
+                           HWallpaperWindowClassName, L"YJL_WALLPAPER",
                            WS_POPUP | WS_VISIBLE | WS_MAXIMIZE,
                            0, 0,
                            GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
@@ -54,8 +56,12 @@ void WallpaperWindow::Show() {
     UpdateWindow(hWnd);
 }
 
+HWND PMWindow() {
+    return FindWindowW(L"Progman", L"Program Manager");
+}
+
 HWND splitDesktopWindow() {
-    HWND hWnd = FindWindowW(L"Progman", L"Program Manager");
+    HWND hWnd = PMWindow();
     if (hWnd != nullptr) {
         SendMessageW(hWnd, 0x052C, 0, 0);
     }
@@ -68,6 +74,11 @@ BOOL CALLBACK CloseWorker2(HWND tophandle, LPARAM _) {
         ShowWindow(FindWindowExW(nullptr, tophandle, L"WorkerW", nullptr), SW_HIDE);
     }
     return true;
+}
+
+HWND WallpaperWindow::FindExist() {
+    HWND hwnd = FindWindowExW(PMWindow(), nullptr, HWallpaperWindowClassName, nullptr);
+    return hwnd;
 }
 
 void WallpaperWindow::SetToDesktop() {
@@ -149,9 +160,23 @@ void WallpaperWindow::SetSize(int width, int height) {
 DEVMODE dm;
 HMENU trayMenu;
 NOTIFYICONDATA nid;
+HANDLE hMapFile = nullptr;
 
 double toTime(SYSTEMTIME t) {
     return (t.wHour * 3600 + t.wMinute * 60 + t.wSecond) + t.wMilliseconds / 1000.0;
+}
+
+void CreateMapping() {
+    hMapFile = CreateFileMappingW(
+            INVALID_HANDLE_VALUE,
+            nullptr,
+            PAGE_READWRITE,
+            0,
+            sizeof(double),
+            HW_FM_VIDEO);
+    if (hMapFile == nullptr) {
+        error(L"CreateFileMappingW failed");
+    }
 }
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -173,6 +198,8 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             AppendMenuW(trayMenu, MF_STRING, PMID_CHANGE, L"选择文件");
             AppendMenuW(trayMenu, MF_STRING, PMID_EXIT, L"退出");
             Shell_NotifyIcon(NIM_ADD, &nid);
+
+            CreateMapping();
             break;
         }
         case WM_SIZE:
@@ -253,6 +280,22 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             PostQuitMessage(0);
             Shell_NotifyIcon(NIM_DELETE, &nid);
             break;
+        case WM_QUIT:
+            CloseHandle(hMapFile);
+            break;
+        case WM_APP_VIDEO_FILE: {
+            char *pData = (char *) MapViewOfFile(
+                    hMapFile,
+                    FILE_MAP_READ, 0, 0, 0
+            );
+            if (pData) {
+                std::string file;
+                file+=pData;
+                UnmapViewOfFile(pData);
+                wallpaperWindow->SetVideo(file);
+            }
+            break;
+        }
         default:
             return DefWindowProcW(hWnd, msg, wParam, lParam);
     }

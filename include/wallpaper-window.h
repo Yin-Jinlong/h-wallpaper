@@ -23,6 +23,9 @@ private:
     int width = 0, height = 0;
 
 public:
+
+    static HWND FindExist();
+
     double frameTime = 0;
     double nowTime = 0;
     double lastTime = 0;
