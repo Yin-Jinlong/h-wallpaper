@@ -200,7 +200,7 @@ bool VideoDecoder::addFrame() {
     sws_freeContext(img_convert_ctx);
 
     std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [this] { return !running() || frames.size() < 60; });
+    cv.wait(lock, [this] { return !running() || frames.size() < MAX_FRAMES; });
     auto thread = threadPtr.load();
     if (thread && thread->running()) {
         frames.push(vf);

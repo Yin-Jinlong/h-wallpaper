@@ -11,6 +11,8 @@
 
 #include "resources.h"
 
+#define MAX_FRAMES 30
+
 #define HW_FM_VIDEO L"h-wallpaper-video"
 
 #define WM_APP_VIDEO_FILE (WM_APP+1)
