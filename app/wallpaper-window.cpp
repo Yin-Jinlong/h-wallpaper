@@ -182,6 +182,14 @@ void WallpaperWindow::PostQueryMaximized() {
     PostMessageW(hWnd, WM_APP_QUERY_MAXIMIZED, 0, 0);
 }
 
+int WallpaperWindow::GetWidth() const {
+    return width;
+}
+
+int WallpaperWindow::GetHeight() const {
+    return height;
+}
+
 DEVMODE dm;
 HMENU trayMenu;
 NOTIFYICONDATA nid;
@@ -202,6 +210,45 @@ void CreateMapping() {
     if (hMapFile == nullptr) {
         error(L"CreateFileMappingW failed");
     }
+}
+
+/**
+ * 绘制
+ * @param hdc
+ * @return 是否重绘
+ */
+bool StartPaint(HDC hdc) {
+    // 没有视频，绘制黑色
+    if (!wallpaperWindow->decoderAvailable()) {
+        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+        RECT rect = {0};
+        rect.right = wallpaperWindow->GetWidth();
+        rect.bottom = wallpaperWindow->GetHeight();
+        FillRect(hdc, &rect, hBrush);
+        DeleteObject(hBrush);
+        return false;
+    }
+
+    // 暂停了
+    if (wallpaperWindow->decoderPaused()) {
+        return false;
+    }
+
+    // 还没加载第一帧
+    if (!wallpaperWindow->firstFrameLoaded()) {
+        return true;
+    }
+
+    SYSTEMTIME now;
+    GetSystemTime(&now);
+    double dt = toTime(now) - wallpaperWindow->lastTime;
+    if (wallpaperWindow->lastTime == 0) {
+        dt = 1.0 / dm.dmDisplayFrequency;
+    }
+    wallpaperWindow->lastTime = toTime(now);
+    wallpaperWindow->nowTime += dt;
+    wallpaperWindow->paint(hdc);
+    return true;
 }
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -237,35 +284,9 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            if (!wallpaperWindow->decoderAvailable()) {
-                HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-                FillRect(hdc, &ps.rcPaint, hBrush);
-                DeleteObject(hBrush);
-                EndPaint(hWnd, &ps);
-                break;
+            if (StartPaint(hdc)) {
+                InvalidateRect(hWnd, nullptr, FALSE);
             }
-
-            if (wallpaperWindow->decoderPaused()) {
-                EndPaint(hWnd, &ps);
-                break;
-            }
-
-            InvalidateRect(hWnd, nullptr, FALSE);
-
-            if (!wallpaperWindow->firstFrameLoaded()) {
-                EndPaint(hWnd, &ps);
-                break;
-            }
-
-            SYSTEMTIME now;
-            GetSystemTime(&now);
-            double dt = toTime(now) - wallpaperWindow->lastTime;
-            if (wallpaperWindow->lastTime == 0) {
-                dt = 1.0 / dm.dmDisplayFrequency;
-            }
-            wallpaperWindow->lastTime = toTime(now);
-            wallpaperWindow->nowTime += dt;
-            wallpaperWindow->paint(hdc);
             EndPaint(hWnd, &ps);
             break;
         }

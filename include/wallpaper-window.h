@@ -55,4 +55,8 @@ public:
     void resume();
 
     void PostQueryMaximized();
+
+    int GetWidth() const;
+
+    int GetHeight() const;
 };
