@@ -27,7 +27,7 @@ link_directories(
         "${FFMPEG_HOME}/lib"
 )
 
-aux_source_directory("src" SRCS)
+aux_source_directory("app" SRCS)
 
 add_executable(${PROJECT_NAME} WIN32
         "resources/resources.rc"
