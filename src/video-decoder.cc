@@ -173,6 +173,7 @@ bool VideoDecoder::addFrame() {
     rgbFrame->width = width;
     rgbFrame->height = height;
     rgbFrame->format = AV_PIX_FMT_BGR24;
+    rgbFrame->duration = frame->duration;
     av_frame_get_buffer(rgbFrame, 32);
 
     // 进行颜色空间转换
