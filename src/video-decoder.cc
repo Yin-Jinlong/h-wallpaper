@@ -95,6 +95,11 @@ VideoDecoder::~VideoDecoder() {
     avcodec_free_context(&codeCtx);
     avformat_close_input(&fmt_ctx);
     avformat_free_context(fmt_ctx);
+    while (!frames.empty()) {
+        auto vf = frames.front();
+        frames.pop();
+        DeleteObject(vf.bitmap);
+    }
 }
 
 
