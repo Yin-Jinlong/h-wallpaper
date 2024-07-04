@@ -9,3 +9,7 @@
 
 ### IDE Local Settings ###
 /CMakeSettings.json
+
+
+### Downloaded Libs ###
+/libs/
