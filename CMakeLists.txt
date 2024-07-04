@@ -3,6 +3,16 @@ project(h-wallpaper)
 
 set(CMAKE_CXX_STANDARD 26)
 
+set(FFMPEG_LIBS
+        avcodec
+#        avdevice
+#        avfilter
+        avformat
+        avutil
+        swresample
+        swscale
+)
+
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
@@ -34,19 +44,13 @@ add_executable(${PROJECT_NAME} WIN32
         ${SRCS}
 )
 target_link_libraries(${PROJECT_NAME}
-        avcodec
-        avdevice
-        avfilter
-        avformat
-        avutil
-        swresample
-        swscale
+        ${FFMPEG_LIBS}
 )
 
 file(GLOB DLLS
         "${FFMPEG_HOME}/bin/avcodec-61.dll"
-        "${FFMPEG_HOME}/bin/avdevice-61.dll"
-        "${FFMPEG_HOME}/bin/avfilter-10.dll"
+#        "${FFMPEG_HOME}/bin/avdevice-61.dll"
+#        "${FFMPEG_HOME}/bin/avfilter-10.dll"
         "${FFMPEG_HOME}/bin/avformat-61.dll"
         "${FFMPEG_HOME}/bin/avutil-59.dll"
         "${FFMPEG_HOME}/bin/swresample-5.dll"
