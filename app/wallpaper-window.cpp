@@ -344,8 +344,10 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 if (!wallpaperWindow->decoderPaused())
                     wallpaperWindow->pause();
             } else {
-                if (wallpaperWindow->decoderPaused())
+                if (wallpaperWindow->decoderPaused()) {
+                    wallpaperWindow->lastTime = 0;
                     wallpaperWindow->resume();
+                }
             }
             break;
         case WM_APP_VIDEO_FILE: {
