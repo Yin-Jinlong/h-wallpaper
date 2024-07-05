@@ -2,10 +2,13 @@
 
 #include "wallpaper-window.h"
 #include "str-utils.h"
+#include "config.h"
 
 using namespace std;
 
 HANDLE hMutex;
+
+string appPath;
 
 void closeMutex() {
     CloseHandle(hMutex);
@@ -17,6 +20,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     int argc = 0;
     LPWSTR *args = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argc > 1) {
+        appPath = wstring2string(args[0]);
+        appPath = appPath.substr(0, appPath.find_last_of("\\/"));
+    }
 
     hMutex = CreateMutex(nullptr, FALSE, "H-Wallpaper");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
@@ -52,6 +59,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     }
     atexit(closeMutex);
 
+    initConfig();
     wallpaperWindow = new WallpaperWindow(hInstance);
 
     wallpaperWindow->SetToDesktop();
@@ -59,6 +67,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     if (argc > 1)
         wallpaperWindow->SetVideo(wstring2string(args[1]));
+    else {
+        if (config["wallpaper"].IsScalar())
+            wallpaperWindow->SetVideo(config["wallpaper"].as<string>(), false);
+    }
 
     std::atomic<bool> queryRun = true;
 

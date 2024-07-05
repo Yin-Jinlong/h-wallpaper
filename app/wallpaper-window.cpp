@@ -1,7 +1,9 @@
 #include <wallpaper-window.h>
+#include <yaml-cpp/yaml.h>
 
 #include "str-utils.h"
 #include "wnd-utils.h"
+#include "config.h"
 
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
@@ -37,13 +39,13 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
     wallpaperWindow = this;
 
     hWnd = CreateWindowEx(0,
-                           HWallpaperWindowClassName, "YJL_WALLPAPER",
-                           WS_POPUP | WS_VISIBLE | WS_MAXIMIZE,
-                           0, 0,
-                           GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
-                           nullptr, nullptr,
-                           hInstance,
-                           nullptr);
+                          HWallpaperWindowClassName, "YJL_WALLPAPER",
+                          WS_POPUP | WS_VISIBLE | WS_MAXIMIZE,
+                          0, 0,
+                          GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
+                          nullptr, nullptr,
+                          hInstance,
+                          nullptr);
 
     if (hWnd == nullptr) {
         error("CreateWindowExW failed");
@@ -88,7 +90,9 @@ void WallpaperWindow::SetToDesktop() {
     SetParent(hWnd, desktop);
 }
 
-void WallpaperWindow::SetVideo(std::string file) {
+void WallpaperWindow::SetVideo(std::string file, bool save) {
+    if (file.empty())
+        return;
     auto decoder = decoderPtr.load();
     if (decoder) {
         decoder->close();
@@ -107,6 +111,10 @@ void WallpaperWindow::SetVideo(std::string file) {
         decoder->width = width;
         decoder->height = height;
         decoderPtr.store(decoder);
+        if (save) {
+            config["wallpaper"] = file;
+            SaveConfig();
+        }
         decoder->startDecode();
     } catch (std::exception &e) {
         decoderPtr.store(nullptr);

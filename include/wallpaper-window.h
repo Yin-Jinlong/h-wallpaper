@@ -38,7 +38,7 @@ public:
 
     void SetToDesktop();
 
-    void SetVideo(std::string file);
+    void SetVideo(std::string file,bool save=true);
 
     void paint(HDC hdc);
 
