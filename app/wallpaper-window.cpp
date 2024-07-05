@@ -1,14 +1,22 @@
 #include <wallpaper-window.h>
 #include <yaml-cpp/yaml.h>
+#include <ShObjIdl_core.h>
+#include <shlobj.h>
 
 #include "str-utils.h"
 #include "wnd-utils.h"
 #include "config.h"
+#include "file-utils.h"
 
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
+#define PMID_RUN_ON_STARTUP 3
 
 static const char *HWallpaperWindowClassName = "YJL-WALLPAPER";
+
+extern std::string appPath;
+extern std::string exePath;
+extern std::wstring exeWPath;
 
 WallpaperWindow *wallpaperWindow;
 
@@ -266,6 +274,27 @@ bool StartPaint(HDC hdc) {
     return true;
 }
 
+std::wstring GetStartupPath() {
+    HRESULT hr;
+    PWSTR pszPath = nullptr;
+
+    hr = SHGetKnownFolderPath(FOLDERID_Startup, 0, nullptr, &pszPath);
+    if (SUCCEEDED(hr)) {
+        std::wstring path = pszPath;
+        CoTaskMemFree(pszPath);
+        return path;
+    }
+    error("GetStartupPath failed");
+}
+
+std::wstring GetLnkFile() {
+    return GetStartupPath() + L"\\h-wallpaper.lnk";
+}
+
+bool isRunOnStartup() {
+    return file_exists(wstring2string(GetLnkFile()));
+}
+
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_CREATE: {
@@ -282,8 +311,10 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             Shell_NotifyIcon(NIM_ADD, &nid);
 
             trayMenu = CreatePopupMenu();
-            AppendMenuW(trayMenu, MF_STRING, PMID_CHANGE, L"选择文件");
-            AppendMenuW(trayMenu, MF_STRING, PMID_EXIT, L"退出");
+            AppendMenu(trayMenu, isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP, "开机启动");
+            AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, "选择文件");
+            AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
+            AppendMenu(trayMenu, MF_STRING, PMID_EXIT, "退出");
             Shell_NotifyIcon(NIM_ADD, &nid);
 
             CreateMapping();
@@ -310,6 +341,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             if (lParam == WM_RBUTTONDOWN) {
                 GetCursorPos(&pt);
                 SetForegroundWindow(hWnd);
+                CheckMenuItem(trayMenu, PMID_RUN_ON_STARTUP, isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED);
                 int id = TrackPopupMenuEx(trayMenu, TPM_RETURNCMD, pt.x, pt.y, hWnd, nullptr);
                 switch (id) {
                     case PMID_EXIT:
@@ -335,6 +367,33 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         if (GetOpenFileName(&ofn)) {
                             wallpaperWindow->SetVideo(ofn.lpstrFile);
                             InvalidateRect(hWnd, nullptr, FALSE);
+                        }
+                        break;
+                    }
+                    case PMID_RUN_ON_STARTUP: {
+                        if (isRunOnStartup()) {
+                            file_delete(wstring2string(GetLnkFile()));
+                        } else {
+                            IShellLink *psl;
+                            auto r = CoCreateInstance(
+                                    CLSID_ShellLink, nullptr,
+                                    CLSCTX_INPROC_SERVER,
+                                    IID_IShellLink,
+                                    (LPVOID *) &psl);
+                            if (r != S_OK) {
+                                error_format_not_throw("CoCreateInstance failed");
+                            }
+                            psl->SetPath(exePath.c_str());
+                            psl->SetWorkingDirectory(appPath.c_str());
+                            IPersistFile *ppf;
+                            psl->QueryInterface(IID_IPersistFile, (LPVOID *) &ppf);
+                            auto lnkFile = GetLnkFile();
+                            auto res = ppf->Save(lnkFile.c_str(), true);
+                            ppf->Release();
+                            psl->Release();
+                            if (res != S_OK) {
+                                error_format_not_throw("create startup file failed");
+                            }
                         }
                         break;
                     }

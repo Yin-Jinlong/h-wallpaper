@@ -23,3 +23,7 @@ bool file_write(const std::string name, std::string content) {
     }
     return false;
 }
+
+bool file_delete(const std::string &name) {
+    return remove(name.c_str()) == 0;
+}
