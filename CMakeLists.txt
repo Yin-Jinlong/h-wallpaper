@@ -12,10 +12,12 @@ include(cmake/msvc.cmake)
 # 变量 #
 ########
 
-set(CMAKE_CXX_STANDARD 26)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 set(LIBS ${CMAKE_SOURCE_DIR}/libs)
+
+set(YAML_BUILD_SHARED_LIBS ON)
 
 set(FFMPEG_LIBS
         avcodec
@@ -38,6 +40,7 @@ set_msvc_utf_8()
 ###########
 
 find_package(ffmpeg)
+find_package(yaml-cpp)
 
 #########
 # 头文件 #
@@ -46,6 +49,7 @@ find_package(ffmpeg)
 include_directories(
         "include"
         ${FFMPEG_INCLUDE_DIR}
+        ${YAML_CPP_INCLUDE_DIR}
 )
 
 ###########
@@ -54,7 +58,12 @@ include_directories(
 
 link_directories(
         ${FFMPEG_LIB_DIR}
+        ${YAML_CPP_LIB_DIR}
 )
+
+##########
+# 主程序 #
+##########
 
 aux_source_directory("app" SRCS)
 
@@ -62,8 +71,10 @@ add_executable(${PROJECT_NAME} WIN32
         "resources/resources.rc"
         ${SRCS}
 )
+
 target_link_libraries(${PROJECT_NAME}
         ${FFMPEG_LIBS}
+        yaml-cpp::yaml-cpp
 )
 
 #########
@@ -72,12 +83,13 @@ target_link_libraries(${PROJECT_NAME}
 
 file(GLOB DLLS
         "${FFMPEG_HOME}/bin/avcodec-61.dll"
-        #        "${FFMPEG_HOME}/bin/avdevice-61.dll"
-        #        "${FFMPEG_HOME}/bin/avfilter-10.dll"
+        # "${FFMPEG_HOME}/bin/avdevice-61.dll"
+        # "${FFMPEG_HOME}/bin/avfilter-10.dll"
         "${FFMPEG_HOME}/bin/avformat-61.dll"
         "${FFMPEG_HOME}/bin/avutil-59.dll"
         "${FFMPEG_HOME}/bin/swresample-5.dll"
         "${FFMPEG_HOME}/bin/swscale-8.dll"
+        "${YAML_CPP_LIB_DIR}/*.dll"
 )
 
 foreach (DLL ${DLLS})
@@ -94,3 +106,4 @@ endforeach ()
 set(CMAKE_INSTALL_PREFIX "${PROJECT_NAME} 1.0")
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES ${DLLS} DESTINATION .)
+install(TARGETS yaml-cpp DESTINATION .)
