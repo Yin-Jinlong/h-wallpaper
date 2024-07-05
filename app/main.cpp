@@ -18,7 +18,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     int argc = 0;
     LPWSTR *args = CommandLineToArgvW(GetCommandLineW(), &argc);
 
-    hMutex = CreateMutexW(nullptr, FALSE, L"H-Wallpaper");
+    hMutex = CreateMutex(nullptr, FALSE, "H-Wallpaper");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         HWND hWnd = WallpaperWindow::FindExist();
         if (argc > 1) {
@@ -27,16 +27,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
             char *pData;
 
             // 打开共享内存
-            hMapFile = OpenFileMappingW(FILE_MAP_ALL_ACCESS, FALSE, HW_FM_VIDEO);
+            hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, HW_FM_VIDEO);
             if (!hMapFile) {
-                error_format_not_throw(L"OpenFileMapping failed with error code %d");
+                error_format_not_throw("OpenFileMapping failed with error code %d");
                 goto end;
             }
 
             // 映射共享内存到进程地址空间
             pData = (char *) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
             if (!pData) {
-                error_format_not_throw(L"MapViewOfFile failed with error code %d");
+                error_format_not_throw("MapViewOfFile failed with error code %d");
                 goto end;
             }
 
@@ -46,7 +46,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
             UnmapViewOfFile(pData);
             CloseHandle(hMapFile);
         } else
-            MessageBoxW(nullptr, L"H-Wallpaper is already running.", L"Error", MB_OK | MB_ICONERROR);
+            MessageBox(nullptr, "H-Wallpaper is already running.", "Error", MB_OK | MB_ICONERROR);
         end:
         return ERROR_ALREADY_EXISTS;
     }

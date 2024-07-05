@@ -6,29 +6,29 @@
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
 
-static const wchar_t *HWallpaperWindowClassName = L"YJL-WALLPAPER";
+static const char *HWallpaperWindowClassName = "YJL-WALLPAPER";
 
 WallpaperWindow *wallpaperWindow;
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 void RegisterWndClass(HINSTANCE hInstance) {
-    WNDCLASSEXW wndClass;
+    WNDCLASSEX wndClass;
     wndClass.cbSize = sizeof(wndClass);
     wndClass.style = CS_HREDRAW | CS_VREDRAW;
     wndClass.lpfnWndProc = WindowProc;
     wndClass.cbClsExtra = 0;
     wndClass.cbWndExtra = 0;
     wndClass.hInstance = hInstance;
-    wndClass.hIcon = ::LoadIcon(GetModuleHandleW(nullptr), MAKEINTRESOURCE(IDI_ICON1));
+    wndClass.hIcon = ::LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
     wndClass.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
     wndClass.hbrBackground = (HBRUSH) ::GetStockObject(BLACK_BRUSH);
     wndClass.lpszMenuName = nullptr;
     wndClass.lpszClassName = HWallpaperWindowClassName;
     wndClass.hIconSm = nullptr;
 
-    if (!RegisterClassExW(&wndClass)) {
-        error(L"RegisterClassExW failed");
+    if (!RegisterClassEx(&wndClass)) {
+        error("RegisterClassExW failed");
     }
 }
 
@@ -36,8 +36,8 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
     RegisterWndClass(hInstance);
     wallpaperWindow = this;
 
-    hWnd = CreateWindowExW(0,
-                           HWallpaperWindowClassName, L"YJL_WALLPAPER",
+    hWnd = CreateWindowEx(0,
+                           HWallpaperWindowClassName, "YJL_WALLPAPER",
                            WS_POPUP | WS_VISIBLE | WS_MAXIMIZE,
                            0, 0,
                            GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
@@ -46,7 +46,7 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
                            nullptr);
 
     if (hWnd == nullptr) {
-        error(L"CreateWindowExW failed");
+        error("CreateWindowExW failed");
     }
 
     avformat_network_init();
@@ -58,7 +58,7 @@ void WallpaperWindow::Show() {
 }
 
 HWND PMWindow() {
-    return FindWindowW(L"Progman", L"Program Manager");
+    return FindWindow("Progman", "Program Manager");
 }
 
 HWND splitDesktopWindow() {
@@ -78,7 +78,7 @@ BOOL CALLBACK CloseWorker2(HWND tophandle, LPARAM _) {
 }
 
 HWND WallpaperWindow::FindExist() {
-    HWND hwnd = FindWindowExW(PMWindow(), nullptr, HWallpaperWindowClassName, nullptr);
+    HWND hwnd = FindWindowEx(PMWindow(), nullptr, HWallpaperWindowClassName, nullptr);
     return hwnd;
 }
 
@@ -207,7 +207,7 @@ double toTime(SYSTEMTIME t) {
 }
 
 void CreateMapping() {
-    hMapFile = CreateFileMappingW(
+    hMapFile = CreateFileMapping(
             INVALID_HANDLE_VALUE,
             nullptr,
             PAGE_READWRITE,
@@ -215,7 +215,7 @@ void CreateMapping() {
             sizeof(double),
             HW_FM_VIDEO);
     if (hMapFile == nullptr) {
-        error(L"CreateFileMappingW failed");
+        error("CreateFileMappingW failed");
     }
 }
 
@@ -309,8 +309,8 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         break;
                     case PMID_CHANGE: {
 
-                        OPENFILENAMEW ofn;
-                        WCHAR szFile[260];
+                        OPENFILENAME ofn;
+                        CHAR szFile[260];
 
                         ZeroMemory(&ofn, sizeof(ofn));
                         ofn.lStructSize = sizeof(ofn);
@@ -318,14 +318,14 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         ofn.lpstrFile = szFile;
                         ofn.lpstrFile[0] = '\0';
                         ofn.nMaxFile = sizeof(szFile);
-                        ofn.lpstrFilter = L"video(*.mp4)\0*.mp4\0\0";
+                        ofn.lpstrFilter = "video(*.mp4)\0*.mp4\0\0";
                         ofn.nFilterIndex = 1;
                         ofn.lpstrFileTitle = nullptr;
                         ofn.nMaxFileTitle = 0;
                         ofn.lpstrInitialDir = nullptr;
                         ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-                        if (GetOpenFileNameW(&ofn)) {
-                            wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
+                        if (GetOpenFileName(&ofn)) {
+                            wallpaperWindow->SetVideo(ofn.lpstrFile);
                             InvalidateRect(hWnd, nullptr, FALSE);
                         }
                         break;
