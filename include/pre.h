@@ -6,10 +6,9 @@
 #include <windows.h>
 #include <stdexcept>
 #include <exception>
+#include <commctrl.h>
 
 #include "str-utils.h"
-
-#include "resources.h"
 
 #define MAX_FRAMES 2
 

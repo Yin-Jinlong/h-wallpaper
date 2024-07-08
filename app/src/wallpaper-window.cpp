@@ -1,9 +1,8 @@
 #include <wallpaper-window.h>
-#include <yaml-cpp/yaml.h>
 #include <ShObjIdl_core.h>
 #include <shlobj.h>
 
-#include "str-utils.h"
+#include "resources.h"
 #include "wnd-utils.h"
 #include "config.h"
 #include "file-utils.h"

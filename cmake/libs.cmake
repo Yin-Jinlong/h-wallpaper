@@ -1,9 +1,8 @@
 include(FetchContent)
 
-function(fetch_lib NAME URL HASH)
+function(fetch_lib NAME URL)
     FetchContent_Declare(${NAME}
             URL ${URL}
-            URL_HASH SHA256=${HASH}
             SOURCE_DIR ${LIBS}/${NAME}
             BINARY_DIR ${LIBS}/${NAME}-${CMAKE_BUILD_TYPE}
     )

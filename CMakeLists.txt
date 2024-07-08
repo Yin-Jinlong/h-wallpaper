@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(h-wallpaper)
+project(h-wallpaper-win)
 
 ########
 # 模块 #
@@ -12,98 +12,17 @@ include(cmake/msvc.cmake)
 # 变量 #
 ########
 
-set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-
 set(LIBS ${CMAKE_SOURCE_DIR}/libs)
+set(OUT_DIR ${CMAKE_BINARY_DIR}/out)
+set(APP_NAME h-wallpaper)
+set(APP_VERSION "1.0")
+set(APP_DIR_NAME "${APP_NAME} ${APP_VERSION}")
 
-set(YAML_BUILD_SHARED_LIBS ON)
+# 子项目
 
-set(FFMPEG_LIBS
-        avcodec
-        # avdevice
-        # avfilter
-        avformat
-        avutil
-        swresample
-        swscale
-)
+add_subdirectory(app)
 
-#########
-# 编译器 #
-#########
+# 安装
 
-set_msvc_utf_8()
-
-###########
-# 外部依赖 #
-###########
-
-find_package(ffmpeg)
-find_package(yaml-cpp)
-
-#########
-# 头文件 #
-#########
-
-include_directories(
-        "include"
-        ${FFMPEG_INCLUDE_DIR}
-        ${YAML_CPP_INCLUDE_DIR}
-)
-
-###########
-# 链接目录 #
-###########
-
-link_directories(
-        ${FFMPEG_LIB_DIR}
-        ${YAML_CPP_LIB_DIR}
-)
-
-##########
-# 主程序 #
-##########
-
-aux_source_directory("app" SRCS)
-
-add_executable(${PROJECT_NAME} WIN32
-        "resources/resources.rc"
-        ${SRCS}
-)
-
-target_link_libraries(${PROJECT_NAME}
-        ${FFMPEG_LIBS}
-        yaml-cpp::yaml-cpp
-)
-
-#########
-# 动态库 #
-#########
-
-file(GLOB DLLS
-        "${FFMPEG_HOME}/bin/avcodec-61.dll"
-        # "${FFMPEG_HOME}/bin/avdevice-61.dll"
-        # "${FFMPEG_HOME}/bin/avfilter-10.dll"
-        "${FFMPEG_HOME}/bin/avformat-61.dll"
-        "${FFMPEG_HOME}/bin/avutil-59.dll"
-        "${FFMPEG_HOME}/bin/swresample-5.dll"
-        "${FFMPEG_HOME}/bin/swscale-8.dll"
-        "${YAML_CPP_LIB_DIR}/*.dll"
-)
-
-foreach (DLL ${DLLS})
-    # 复制dll
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLL}" "${CMAKE_BINARY_DIR}"
-    )
-endforeach ()
-
-########
-# 安装 #
-########
-
-set(CMAKE_INSTALL_PREFIX "${PROJECT_NAME} 1.0")
-install(TARGETS ${PROJECT_NAME} DESTINATION .)
-install(FILES ${DLLS} DESTINATION .)
-install(TARGETS yaml-cpp DESTINATION .)
+set(CMAKE_INSTALL_PREFIX ${APP_DIR_NAME})
