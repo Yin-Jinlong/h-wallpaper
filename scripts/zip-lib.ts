@@ -3,6 +3,13 @@ import fs from 'fs'
 import JSZip from 'jszip'
 import {DOWNLOAD_DIR, oraP} from './vars'
 
+/**
+ * 下载zip
+ * @param name 库名
+ * @param lib 库信息
+ *
+ * @author YJL
+ */
 export async function download(name: string, lib: ZipLib) {
     oraP.start(`Downloading ${name}...`)
     let downloadFile = path.resolve(DOWNLOAD_DIR, lib['download-name'])
@@ -21,7 +28,13 @@ export async function download(name: string, lib: ZipLib) {
     oraP.succeed(`Downloaded ${name}`)
 }
 
-
+/**
+ * 解压zip
+ * @param name 库名
+ * @param lib 库信息
+ *
+ * @author YJL
+ */
 export async function extract(name: string, lib: ZipLib) {
     return new Promise(async resolve => {
 

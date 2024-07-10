@@ -2,6 +2,13 @@
 
 #include <pre.h>
 
+/**
+ * wstring 转 string
+ * @param wstr 宽字符串
+ * @return 字符串
+ *
+ * @author YJL
+ */
 inline std::string wstring2string(const std::wstring wstr) {
     std::string result;
     int len = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), wstr.size(), NULL, 0, NULL, NULL);
