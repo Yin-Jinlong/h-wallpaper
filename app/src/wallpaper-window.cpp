@@ -297,7 +297,7 @@ bool isRunOnStartup() {
     DWORD size = 260;
     CHAR value[260];
     DWORD err;
-    if ((err = RegGetValueA(HKEY_CURRENT_USER, REG_RUN_KEY, "h-wallpaper",
+    if ((err = RegGetValueA(HKEY_CURRENT_USER, REG_RUN_KEY, APP_NAME,
                             RRF_RT_REG_SZ, nullptr, value, &size))) {
         if (err == ERROR_FILE_NOT_FOUND) {
             return false;
@@ -313,14 +313,14 @@ void setRunOnStartup(bool run) {
         error("RegOpenKeyEx failed");
     }
     if (run) {
-        if (RegSetValueExA(runKey, "h-wallpaper", 0, REG_SZ, (BYTE *) exePath.c_str(),
+        if (RegSetValueExA(runKey, APP_NAME, 0, REG_SZ, (BYTE *) exePath.c_str(),
                            (DWORD) exePath.size())) {
             RegCloseKey(runKey);
             error("RegSetValueEx failed");
         }
     } else {
-        if (RegHasValue(runKey, "h-wallpaper")) {
-            if (RegDeleteValueA(runKey, "h-wallpaper")) {
+        if (RegHasValue(runKey, APP_NAME)) {
+            if (RegDeleteValueA(runKey, APP_NAME)) {
                 RegCloseKey(runKey);
                 error("RegDeleteValue failed");
             }
@@ -340,7 +340,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
             nid.uCallbackMessage = WM_USER;
             nid.hIcon = LoadIcon(GetModuleHandleW(nullptr), MAKEINTRESOURCE(IDI_ICON1));
-            lstrcpy(nid.szTip, "h-wallpaper");
+            lstrcpy(nid.szTip, APP_NAME);
             Shell_NotifyIcon(NIM_ADD, &nid);
 
             trayMenu = CreatePopupMenu();

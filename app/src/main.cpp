@@ -1,7 +1,6 @@
 #include <pre.h>
 
 #include "wallpaper-window.h"
-#include "str-utils.h"
 #include "config.h"
 
 using namespace std;
@@ -28,7 +27,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     appPath = wstring2string(args[0]);
     appPath = appPath.substr(0, appPath.find_last_of("\\/"));
 
-    hMutex = CreateMutex(nullptr, FALSE, "H-Wallpaper");
+    hMutex = CreateMutex(nullptr, FALSE, APP_NAME);
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         HWND hWnd = WallpaperWindow::FindExist();
         if (argc > 1) {
