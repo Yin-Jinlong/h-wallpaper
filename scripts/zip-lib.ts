@@ -1,6 +1,9 @@
 import path from 'path'
 import fs from 'fs'
+
 import JSZip from 'jszip'
+import pc from 'picocolors'
+
 import {DOWNLOAD_DIR, oraP} from './vars'
 
 /**
@@ -38,7 +41,7 @@ export async function download(name: string, lib: ZipLib) {
 export async function extract(name: string, lib: ZipLib) {
     return new Promise(async resolve => {
 
-        console.log(`Extracting ${name}...`)
+        console.log(`${pc.cyan('Extracting')} ${name}...`)
         let patternMap = new Map<RegExp | string, string>()
         for (let dst in lib.libs) {
             for (let pattern of lib.libs[dst]) {
@@ -81,13 +84,13 @@ export async function extract(name: string, lib: ZipLib) {
             let name = path.basename(file.name)
             let dstFile = path.resolve(dst, name)
             if (fs.existsSync(dstFile)) {
-                oraP.info(`skip ${name}`)
+                oraP.info(`${pc.yellow('skip')} ${name}`)
             } else {
                 oraP.text = `Extracting ${file.name} to ${dst}`
                 fs.writeFileSync(path.resolve(dst, name), data)
             }
         }
-        oraP.succeed(`Extracted ${name}`)
+        oraP.succeed(`${pc.green('Extracted')} ${name}`)
         resolve(undefined)
     })
 }

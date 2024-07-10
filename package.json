@@ -2,6 +2,7 @@
   "name": "h-wallpaper",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "scripts": {
     "update-libs": "tsx scripts/update.ts"
   },
@@ -14,6 +15,7 @@
     "@types/node": "^20.14.10",
     "jszip": "^3.10.1",
     "ora": "^8.0.1",
+    "picocolors": "^1.0.1",
     "tsx": "^4.16.2",
     "yaml": "^2.4.5"
   }

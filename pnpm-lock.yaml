@@ -17,6 +17,9 @@ importers:
       ora:
         specifier: ^8.0.1
         version: 8.0.1
+      picocolors:
+        specifier: ^1.0.1
+        version: 1.0.1
       tsx:
         specifier: ^4.16.2
         version: 4.16.2
@@ -252,6 +255,9 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  picocolors@1.0.1:
+    resolution: {integrity: sha512-anP1Z8qwhkbmu7MFP5iTt+wQKXgwzf7zTyGlcdzabySa9vd0Xt392U0rVmz9poOaBj0uHJKyyo9/upk0HrEQew==}
+
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
 
@@ -476,6 +482,8 @@ snapshots:
       strip-ansi: 7.1.0
 
   pako@1.0.11: {}
+
+  picocolors@1.0.1: {}
 
   process-nextick-args@2.0.1: {}
 
