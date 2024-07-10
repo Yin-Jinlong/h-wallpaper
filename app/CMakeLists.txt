@@ -65,7 +65,7 @@ add_executable(${PROJECT_NAME} WIN32
 
 target_link_libraries(${PROJECT_NAME}
         ${FFMPEG_LIBS}
-        yaml-cpp::yaml-cpp
+        ${YAML_CPP_LIBS}
 )
 
 #########
@@ -80,7 +80,7 @@ file(GLOB DLLS
         "${FFMPEG_HOME}/bin/avutil-59.dll"
         "${FFMPEG_HOME}/bin/swresample-5.dll"
         "${FFMPEG_HOME}/bin/swscale-8.dll"
-        "${YAML_CPP_LIB_DIR}/*.dll"
+        "${YAML_CPP_BIN_DIR}/*.dll"
 )
 
 foreach (DLL ${DLLS})
@@ -96,4 +96,4 @@ endforeach ()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES ${DLLS} DESTINATION .)
-install(TARGETS yaml-cpp DESTINATION .)
+#install(TARGETS yaml-cpp DESTINATION .)

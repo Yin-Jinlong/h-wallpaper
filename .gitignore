@@ -11,5 +11,9 @@
 /CMakeSettings.json
 
 
+### Packages ###
+node_modules/
+
 ### Downloaded Libs ###
 /libs/
+/downloads/

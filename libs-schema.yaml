@@ -1,0 +1,71 @@
+$schema: "http://json-schema.org/draft-04/schema#"
+title: "Libraries"
+description: "A list of libraries"
+type: object
+properties:
+  version:
+    type: number
+    description: "The version of the schema"
+  libs:
+    type: object
+    additionalProperties: true
+    patternProperties:
+      .*:
+        allOf:
+          - $ref: "#/definitions/base-lib"
+          - oneOf:
+              - $ref: "#/definitions/git-lib"
+              - $ref: "#/definitions/zip-lib"
+
+definitions:
+  base-lib:
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum:
+          - zip
+          - git
+      url:
+        type: string
+  git-lib:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - git
+      tag:
+        type: string
+      builds:
+        patternProperties:
+          .*:
+            $ref: "#/definitions/build-cmd"
+  zip-lib:
+    type: object
+    properties:
+      type:
+        type: string
+        enum:
+          - zip
+      download-name:
+        type: string
+      libs:
+        type: object
+        additionalProperties: true
+        patternProperties:
+          .*:
+            type: array
+            items:
+              - type: string
+  build-cmd:
+    type: object
+    properties:
+      pre-build-cmd:
+        type: string
+      build-cmd:
+        type: string
+      install-cmd:
+        type: string

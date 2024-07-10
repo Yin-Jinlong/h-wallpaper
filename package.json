@@ -1,0 +1,20 @@
+{
+  "name": "h-wallpaper",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "update-libs": "tsx scripts/update.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Yin-Jinlong/h-wallpaper.git"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "jszip": "^3.10.1",
+    "ora": "^8.0.1",
+    "tsx": "^4.16.2",
+    "yaml": "^2.4.5"
+  }
+}

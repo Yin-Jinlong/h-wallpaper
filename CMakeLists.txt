@@ -13,7 +13,7 @@ include(cmake/msvc.cmake)
 ########
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-set(LIBS ${CMAKE_SOURCE_DIR}/libs)
+set(LIBS_DIR ${CMAKE_SOURCE_DIR}/libs)
 set(OUT_DIR ${CMAKE_BINARY_DIR}/out)
 set(APP_NAME h-wallpaper)
 set(APP_VERSION "1.0")
@@ -22,6 +22,7 @@ set(APP_DIR_NAME "${APP_NAME} ${APP_VERSION}")
 # 子项目
 
 add_subdirectory(app)
+#add_subdirectory(ui)
 
 # 安装
 

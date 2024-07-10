@@ -79,9 +79,9 @@ HWND splitDesktopWindow() {
 }
 
 BOOL CALLBACK CloseWorker2(HWND tophandle, LPARAM _) {
-    HWND defview = FindWindowExW(tophandle, nullptr, L"SHELLDLL_DefView", nullptr);
+    HWND defview = FindWindowExA(tophandle, nullptr, "SHELLDLL_DefView", nullptr);
     if (defview != nullptr) {
-        ShowWindow(FindWindowExW(nullptr, tophandle, L"WorkerW", nullptr), SW_HIDE);
+        ShowWindow(FindWindowExA(nullptr, tophandle, "WorkerW", nullptr), SW_HIDE);
     }
     return true;
 }

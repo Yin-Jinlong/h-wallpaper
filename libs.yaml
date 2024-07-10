@@ -1,0 +1,27 @@
+$schema: ./libs-schema.yaml
+version: 1.0
+libs:
+  ffmpeg:
+    type: zip
+    url: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.0-latest-win64-lgpl-shared-7.0.zip
+    download-name: ffmpeg-n7.0-latest-win64-lgpl-shared-7.0.zip
+    libs:
+      libs/ffmpeg/bin/:
+        - ".*\.dll$"
+      libs/ffmpeg/lib/:
+        - "ffmpeg-n7.0-latest-win64-lgpl-shared-7.0/lib/.*\.lib"
+      libs/ffmpeg/include/:
+        - "ffmpeg-n7.0-latest-win64-lgpl-shared-7.0/include/"
+  yaml-cpp:
+    type: git
+    url: https://github.com/jbeder/yaml-cpp.git
+    tag: 0.8.0
+    builds:
+      Release:
+        pre-build-cmd: cmake -B build-release -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../libs/yaml-cpp-Release -DYAML_BUILD_SHARED_LIBS=ON
+        build-cmd: cd build-release && cmake --build . --config Release
+        install-cmd: cd build-release && cmake --install . --config Release
+      Debug:
+        pre-build-cmd: cmake -B build-debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../libs/yaml-cpp-Debug -DYAML_BUILD_SHARED_LIBS=ON
+        build-cmd: cd build-debug && cmake --build . --config Debug
+        install-cmd: cd build-debug && cmake --install . --config Debug
