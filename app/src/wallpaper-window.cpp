@@ -11,6 +11,8 @@
 #define PMID_CHANGE 2
 #define PMID_RUN_ON_STARTUP 3
 
+#define REG_RUN_KEY R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Run)"
+
 static const char *HWallpaperWindowClassName = "YJL-WALLPAPER";
 
 extern std::string appPath;
@@ -284,14 +286,46 @@ std::wstring GetStartupPath() {
         return path;
     }
     error("GetStartupPath failed");
+    return L"";
 }
 
-std::wstring GetLnkFile() {
-    return GetStartupPath() + L"\\h-wallpaper.lnk";
+bool RegHasValue(HKEY hkey, LPCSTR subKey) {
+    return RegQueryValueA(hkey, subKey, nullptr, nullptr) == ERROR_SUCCESS;
 }
 
 bool isRunOnStartup() {
-    return file_exists(wstring2string(GetLnkFile()));
+    DWORD size = 260;
+    CHAR value[260];
+    DWORD err;
+    if ((err = RegGetValueA(HKEY_CURRENT_USER, REG_RUN_KEY, "h-wallpaper",
+                            RRF_RT_REG_SZ, nullptr, value, &size))) {
+        if (err == ERROR_FILE_NOT_FOUND) {
+            return false;
+        }
+        error("RegQueryValueEx failed");
+    }
+    return exePath == value;
+}
+
+void setRunOnStartup(bool run) {
+    HKEY runKey;
+    if (RegOpenKeyExA(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_WRITE, &runKey)) {
+        error("RegOpenKeyEx failed");
+    }
+    if (run) {
+        if (RegSetValueExA(runKey, "h-wallpaper", 0, REG_SZ, (BYTE *) exePath.c_str(),
+                           (DWORD) exePath.size())) {
+            RegCloseKey(runKey);
+            error("RegSetValueEx failed");
+        }
+    } else {
+        if (RegHasValue(runKey, "h-wallpaper")) {
+            if (RegDeleteValueA(runKey, "h-wallpaper")) {
+                RegCloseKey(runKey);
+                error("RegDeleteValue failed");
+            }
+        }
+    }
 }
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -370,30 +404,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         break;
                     }
                     case PMID_RUN_ON_STARTUP: {
-                        if (isRunOnStartup()) {
-                            file_delete(wstring2string(GetLnkFile()));
-                        } else {
-                            IShellLink *psl;
-                            auto r = CoCreateInstance(
-                                    CLSID_ShellLink, nullptr,
-                                    CLSCTX_INPROC_SERVER,
-                                    IID_IShellLink,
-                                    (LPVOID *) &psl);
-                            if (r != S_OK) {
-                                error_format_not_throw("CoCreateInstance failed");
-                            }
-                            psl->SetPath(exePath.c_str());
-                            psl->SetWorkingDirectory(appPath.c_str());
-                            IPersistFile *ppf;
-                            psl->QueryInterface(IID_IPersistFile, (LPVOID *) &ppf);
-                            auto lnkFile = GetLnkFile();
-                            auto res = ppf->Save(lnkFile.c_str(), true);
-                            ppf->Release();
-                            psl->Release();
-                            if (res != S_OK) {
-                                error_format_not_throw("create startup file failed");
-                            }
-                        }
+                        setRunOnStartup(!isRunOnStartup());
                         break;
                     }
                 }
@@ -434,3 +445,5 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     return 0;
 }
+
+#undef REG_RUN_KEY
