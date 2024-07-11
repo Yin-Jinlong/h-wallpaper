@@ -103,32 +103,35 @@ void WallpaperWindow::SetToDesktop() {
 void WallpaperWindow::SetVideo(std::string file, bool save) {
     if (file.empty())
         return;
-    auto decoder = decoderPtr.load();
-    if (decoder) {
-        decoder->close();
-        delete decoder;
-        decoderPtr.store(nullptr);
+    VideoDecoder *nd;
+    try {
+        nd = new VideoDecoder(file);
+    } catch (...) {
+        return;
+    }
+    {
+        auto decoder = decoderPtr.load();
+        if (decoder) {
+            decoder->close();
+            delete decoder;
+            decoderPtr.store(nullptr);
+        }
     }
     nowTime = 0;
     frameTime = 0;
     lastTime = 0;
-    try {
-        decoder = new VideoDecoder(file);
-        //**************************//
-        // 到此步屏幕（窗口）尺寸已经有了 //
-        // 前面WM_SIZE已经处理过了     //
-        //**************************//
-        decoder->width = width;
-        decoder->height = height;
-        decoderPtr.store(decoder);
-        if (save) {
-            config["wallpaper"] = file;
-            SaveConfig();
-        }
-        decoder->startDecode();
-    } catch (std::exception &e) {
-        decoderPtr.store(nullptr);
+    //**************************//
+    // 到此步屏幕（窗口）尺寸已经有了 //
+    // 前面WM_SIZE已经处理过了     //
+    //**************************//
+    nd->width = width;
+    nd->height = height;
+    decoderPtr.store(nd);
+    if (save) {
+        config["wallpaper"] = file;
+        SaveConfig();
     }
+    nd->startDecode();
     InvalidateRect(hWnd, nullptr, false);
 }
 

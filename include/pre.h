@@ -24,7 +24,7 @@
  * @author YJL
  */
 inline void error(CHAR *msg) {
-    MessageBoxExA(nullptr, msg, "Error", MB_OK | MB_ICONERROR, 0);
+    MessageBoxExA(nullptr, msg, "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
     throw std::runtime_error(msg);
 }
 
@@ -35,7 +35,7 @@ inline void error(CHAR *msg) {
  * @author YJL
  */
 inline void error(const CHAR *msg) {
-    MessageBoxExA(nullptr, msg, "Error", MB_OK | MB_ICONERROR, 0);
+    MessageBoxExA(nullptr, msg, "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
     throw std::runtime_error(msg);
 }
 
@@ -48,5 +48,5 @@ inline void error(const CHAR *msg) {
 inline void error_format_not_throw(const CHAR *msg, ...) {
     CHAR buf[1024];
     sprintf_s(buf, 1024, msg);
-    MessageBoxExA(nullptr, buf, "Error", MB_OK | MB_ICONERROR, 0);
+    MessageBoxExA(nullptr, buf, "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
 }
