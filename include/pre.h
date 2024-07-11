@@ -29,13 +29,32 @@ inline void error(LPCSTR msg) {
 }
 
 /**
- * @brief 显示错误并格式化
+ * @brief 显示错误并抛出异常
  * @param msg 消息
  *
  * @author YJL
  */
-inline void error_format_not_throw(LPCSTR msg, ...) {
-    CHAR buf[1024];
-    sprintf_s(buf, 1024, msg);
-    MessageBoxExA(nullptr, buf, "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
+inline void error(const std::string &msg) {
+    MessageBoxExA(nullptr, msg.c_str(), "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
+    throw std::runtime_error(msg);
+}
+
+/**
+ * @brief 显示错误
+ * @param msg 消息
+ *
+ * @author YJL
+ */
+inline void error_not_throw(LPCSTR msg) {
+    MessageBoxExA(nullptr, msg, "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
+}
+
+/**
+ * @brief 显示错误
+ * @param msg 消息
+ *
+ * @author YJL
+ */
+inline void error_not_throw(const std::string &msg) {
+    MessageBoxExA(nullptr, msg.c_str(), "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
 }

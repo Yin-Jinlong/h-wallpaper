@@ -27,15 +27,17 @@ int sendVideoFile(const string &file) {
     // 打开共享内存
     hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, HW_FM_VIDEO);
     if (!hMapFile) {
-        error_format_not_throw("OpenFileMapping failed with error code %d");
-        return GetLastError();
+        auto err = GetLastError();
+        error_not_throw(format("OpenFileMapping failed with error code {}", err));
+        return err;
     }
 
     // 映射共享内存到进程地址空间
     pData = (char *) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     if (!pData) {
-        error_format_not_throw("MapViewOfFile failed with error code %d");
-        return GetLastError();
+        auto err = GetLastError();
+        error_not_throw(format("MapViewOfFile failed with error code {}", err));
+        return err;
     }
 
     strcpy_s(pData, file.length() + 1, file.c_str());

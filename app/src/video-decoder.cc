@@ -54,7 +54,7 @@ public:
 
 VideoDecoder::VideoDecoder(const std::string &file) {
     if (avformat_open_input(&fmt_ctx, file.c_str(), nullptr, nullptr)) {
-        error("Could not open file");
+        error(std::format("Could not open file: {}", file));
     }
     if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
         error("Could not find stream info");
