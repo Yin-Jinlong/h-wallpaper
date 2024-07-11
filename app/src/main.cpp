@@ -18,6 +18,33 @@ void closeMutex() {
 
 extern WallpaperWindow *wallpaperWindow;
 
+int sendVideoFile(const string &file) {
+    HWND hWnd = WallpaperWindow::FindExist();
+    PostMessage(hWnd, WM_APP_VIDEO_FILE, 0, 0);
+    HANDLE hMapFile;
+    char *pData;
+
+    // 打开共享内存
+    hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, HW_FM_VIDEO);
+    if (!hMapFile) {
+        error_format_not_throw("OpenFileMapping failed with error code %d");
+        return GetLastError();
+    }
+
+    // 映射共享内存到进程地址空间
+    pData = (char *) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    if (!pData) {
+        error_format_not_throw("MapViewOfFile failed with error code %d");
+        return GetLastError();
+    }
+
+    strcpy_s(pData, file.length() + 1, file.c_str());
+
+    UnmapViewOfFile(pData);
+    CloseHandle(hMapFile);
+    return 0;
+}
+
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 
     int argc = 0;
@@ -29,34 +56,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     hMutex = CreateMutex(nullptr, FALSE, APP_NAME);
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        HWND hWnd = WallpaperWindow::FindExist();
-        if (argc > 1) {
-            PostMessage(hWnd, WM_APP_VIDEO_FILE, 0, 0);
-            HANDLE hMapFile;
-            char *pData;
-
-            // 打开共享内存
-            hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, HW_FM_VIDEO);
-            if (!hMapFile) {
-                error_format_not_throw("OpenFileMapping failed with error code %d");
-                goto end;
-            }
-
-            // 映射共享内存到进程地址空间
-            pData = (char *) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-            if (!pData) {
-                error_format_not_throw("MapViewOfFile failed with error code %d");
-                goto end;
-            }
-
-            auto fileName = wstring2string(args[1]);
-            strcpy_s(pData, fileName.length() + 1, fileName.c_str());
-
-            UnmapViewOfFile(pData);
-            CloseHandle(hMapFile);
-        } else
-            MessageBox(nullptr, TEXT("H-Wallpaper is already running."), TEXT("Error"), MB_OK | MB_ICONERROR);
-        end:
+        if (argc > 1)
+            return sendVideoFile(wstring2string(args[1]));
+        MessageBox(nullptr, TEXT("H-Wallpaper is already running."), TEXT("Error"), MB_OK | MB_ICONERROR);
         return ERROR_ALREADY_EXISTS;
     }
     atexit(closeMutex);
@@ -69,10 +71,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     if (argc > 1)
         wallpaperWindow->SetVideo(wstring2string(args[1]));
-    else {
-        if (config["wallpaper"].IsScalar())
-            wallpaperWindow->SetVideo(config["wallpaper"].as<string>(), false);
-    }
+    else if (config["wallpaper"].IsScalar())
+        wallpaperWindow->SetVideo(config["wallpaper"].as<string>(), false);
 
     std::atomic<bool> queryRun = true;
 
@@ -84,7 +84,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     });
 
     MSG msg;
-    while (GetMessageW(&msg, nullptr, 0, 0)) {
+    while (GetMessage(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

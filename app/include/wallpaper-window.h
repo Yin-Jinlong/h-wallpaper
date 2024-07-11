@@ -73,7 +73,7 @@ public:
      *
      * @param file 视频文件
      */
-    void SetVideo(std::string file,bool save=true);
+    void SetVideo(const std::string &file, bool save = true);
 
     /**
      * 绘制壁纸

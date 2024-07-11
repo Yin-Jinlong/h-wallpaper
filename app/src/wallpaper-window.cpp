@@ -1,6 +1,4 @@
 #include <wallpaper-window.h>
-#include <ShObjIdl_core.h>
-#include <shlobj.h>
 
 #include "resources.h"
 #include "wnd-utils.h"
@@ -100,7 +98,7 @@ void WallpaperWindow::SetToDesktop() {
     SetParent(hWnd, desktop);
 }
 
-void WallpaperWindow::SetVideo(std::string file, bool save) {
+void WallpaperWindow::SetVideo(const std::string &file, bool save) {
     if (file.empty())
         return;
     VideoDecoder *nd;
@@ -279,20 +277,6 @@ bool StartPaint(HDC hdc) {
     return true;
 }
 
-std::wstring GetStartupPath() {
-    HRESULT hr;
-    PWSTR pszPath = nullptr;
-
-    hr = SHGetKnownFolderPath(FOLDERID_Startup, 0, nullptr, &pszPath);
-    if (SUCCEEDED(hr)) {
-        std::wstring path = pszPath;
-        CoTaskMemFree(pszPath);
-        return path;
-    }
-    error("GetStartupPath failed");
-    return L"";
-}
-
 bool RegHasValue(HKEY hkey, LPCWSTR subKey) {
     return RegQueryValue(hkey, subKey, nullptr, nullptr) == ERROR_SUCCESS;
 }
@@ -334,31 +318,69 @@ void setRunOnStartup(bool run) {
     RegCloseKey(runKey);
 }
 
+void createTray(HWND hWnd) {
+    dm.dmSize = sizeof(DEVMODE);
+    EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
+
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hWnd;
+    nid.uID = 0;
+    nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    nid.uCallbackMessage = WM_USER;
+    nid.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
+    lstrcpy(nid.szTip, APP_NAME);
+    Shell_NotifyIcon(NIM_ADD, &nid);
+
+    trayMenu = CreatePopupMenu();
+
+    AppendMenu(trayMenu,
+               isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
+               GetStr(IDS_RUN_ON_STARTUP).c_str());
+    AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GetStr(IDS_CHOOSE_FILE).c_str());
+    AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GetStr(IDS_EXIT).c_str());
+    Shell_NotifyIcon(NIM_ADD, &nid);
+}
+
+void onMenuClick(HWND hWnd, int id) {
+    switch (id) {
+        case PMID_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        case PMID_CHANGE: {
+
+            OPENFILENAME ofn;
+            WCHAR szFile[260];
+
+            ZeroMemory(&ofn, sizeof(ofn));
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = hWnd;
+            ofn.lpstrFile = szFile;
+            ofn.lpstrFile[0] = '\0';
+            ofn.nMaxFile = sizeof(szFile);
+            ofn.lpstrFilter = TEXT("video(*.mp4)\0*.mp4\0\0");
+            ofn.nFilterIndex = 1;
+            ofn.lpstrFileTitle = nullptr;
+            ofn.nMaxFileTitle = 0;
+            ofn.lpstrInitialDir = nullptr;
+            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+            if (GetOpenFileName(&ofn)) {
+                wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
+                InvalidateRect(hWnd, nullptr, FALSE);
+            }
+            break;
+        }
+        case PMID_RUN_ON_STARTUP: {
+            setRunOnStartup(!isRunOnStartup());
+            break;
+        }
+    }
+}
+
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_CREATE: {
-            dm.dmSize = sizeof(DEVMODE);
-            EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
-
-            nid.cbSize = sizeof(nid);
-            nid.hWnd = hWnd;
-            nid.uID = 0;
-            nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-            nid.uCallbackMessage = WM_USER;
-            nid.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
-            lstrcpy(nid.szTip, APP_NAME);
-            Shell_NotifyIcon(NIM_ADD, &nid);
-
-            trayMenu = CreatePopupMenu();
-
-
-            AppendMenu(trayMenu,
-                       isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
-                       GetStr(IDS_RUN_ON_STARTUP).c_str());
-            AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GetStr(IDS_CHOOSE_FILE).c_str());
-            AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
-            AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GetStr(IDS_EXIT).c_str());
-            Shell_NotifyIcon(NIM_ADD, &nid);
+            createTray(hWnd);
 
             CreateMapping();
             break;
@@ -381,43 +403,14 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
         case WM_USER: {
             POINT pt;
-            if (lParam == WM_RBUTTONDOWN) {
-                GetCursorPos(&pt);
+            GetCursorPos(&pt);
+            if (lParam == WM_LBUTTONDOWN) {
+                onMenuClick(hWnd, PMID_CHANGE);
+            } else if (lParam == WM_RBUTTONDOWN) {
                 SetForegroundWindow(hWnd);
                 CheckMenuItem(trayMenu, PMID_RUN_ON_STARTUP, isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED);
                 int id = TrackPopupMenuEx(trayMenu, TPM_RETURNCMD, pt.x, pt.y, hWnd, nullptr);
-                switch (id) {
-                    case PMID_EXIT:
-                        DestroyWindow(hWnd);
-                        break;
-                    case PMID_CHANGE: {
-
-                        OPENFILENAME ofn;
-                        WCHAR szFile[260];
-
-                        ZeroMemory(&ofn, sizeof(ofn));
-                        ofn.lStructSize = sizeof(ofn);
-                        ofn.hwndOwner = hWnd;
-                        ofn.lpstrFile = szFile;
-                        ofn.lpstrFile[0] = '\0';
-                        ofn.nMaxFile = sizeof(szFile);
-                        ofn.lpstrFilter = TEXT("video(*.mp4)\0*.mp4\0\0");
-                        ofn.nFilterIndex = 1;
-                        ofn.lpstrFileTitle = nullptr;
-                        ofn.nMaxFileTitle = 0;
-                        ofn.lpstrInitialDir = nullptr;
-                        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-                        if (GetOpenFileName(&ofn)) {
-                            wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
-                            InvalidateRect(hWnd, nullptr, FALSE);
-                        }
-                        break;
-                    }
-                    case PMID_RUN_ON_STARTUP: {
-                        setRunOnStartup(!isRunOnStartup());
-                        break;
-                    }
-                }
+                onMenuClick(hWnd, id);
             }
             break;
         }
@@ -430,11 +423,9 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             if (HasWindowMaximized()) {
                 if (!wallpaperWindow->decoderPaused())
                     wallpaperWindow->pause();
-            } else {
-                if (wallpaperWindow->decoderPaused()) {
-                    wallpaperWindow->lastTime = 0;
-                    wallpaperWindow->resume();
-                }
+            } else if (wallpaperWindow->decoderPaused()) {
+                wallpaperWindow->lastTime = 0;
+                wallpaperWindow->resume();
             }
             break;
         case WM_APP_VIDEO_FILE: {
