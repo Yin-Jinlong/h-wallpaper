@@ -15,35 +15,211 @@
 static const WCHAR *HWallpaperWindowClassName = TEXT("YJL-WALLPAPER");
 
 extern std::string appPath;
-extern std::string exePath;
 extern std::wstring exeWPath;
 
 WallpaperWindow *wallpaperWindow;
 
-LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+namespace hww {
+    DEVMODE dm;
+    HMENU trayMenu;
+    NOTIFYICONDATA nid;
+    HANDLE hMapFile = nullptr;
 
-void RegisterWndClass(HINSTANCE hInstance) {
-    WNDCLASSEX wndClass;
-    wndClass.cbSize = sizeof(wndClass);
-    wndClass.style = CS_HREDRAW | CS_VREDRAW;
-    wndClass.lpfnWndProc = WindowProc;
-    wndClass.cbClsExtra = 0;
-    wndClass.cbWndExtra = 0;
-    wndClass.hInstance = hInstance;
-    wndClass.hIcon = ::LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
-    wndClass.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
-    wndClass.hbrBackground = (HBRUSH) ::GetStockObject(BLACK_BRUSH);
-    wndClass.lpszMenuName = nullptr;
-    wndClass.lpszClassName = HWallpaperWindowClassName;
-    wndClass.hIconSm = nullptr;
+    LRESULT windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-    if (!RegisterClassEx(&wndClass)) {
-        error("RegisterClassEx failed");
+    void registerWndClass(HINSTANCE hInstance) {
+        WNDCLASSEX wndClass;
+        wndClass.cbSize = sizeof(wndClass);
+        wndClass.style = CS_HREDRAW | CS_VREDRAW;
+        wndClass.lpfnWndProc = windowProc;
+        wndClass.cbClsExtra = 0;
+        wndClass.cbWndExtra = 0;
+        wndClass.hInstance = hInstance;
+        wndClass.hIcon = ::LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
+        wndClass.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
+        wndClass.hbrBackground = (HBRUSH) ::GetStockObject(BLACK_BRUSH);
+        wndClass.lpszMenuName = nullptr;
+        wndClass.lpszClassName = HWallpaperWindowClassName;
+        wndClass.hIconSm = nullptr;
+
+        if (!RegisterClassEx(&wndClass)) {
+            error("RegisterClassEx failed");
+        }
+    }
+
+    HWND pmWindow() {
+        return FindWindow(TEXT("Progman"), TEXT("Program Manager"));
+    }
+
+    HWND splitDesktopWindow() {
+        HWND hWnd = pmWindow();
+        if (hWnd != nullptr) {
+            SendMessage(hWnd, 0x052C, 0, 0);
+        }
+        return hWnd;
+    }
+
+    double toTime(SYSTEMTIME t) {
+        return (t.wHour * 3600 + t.wMinute * 60 + t.wSecond) + t.wMilliseconds / 1000.0;
+    }
+
+    void createMapping() {
+        hMapFile = CreateFileMapping(
+                INVALID_HANDLE_VALUE,
+                nullptr,
+                PAGE_READWRITE,
+                0,
+                sizeof(double),
+                HW_FM_VIDEO);
+        if (hMapFile == nullptr) {
+            error("CreateFileMappingW failed");
+        }
+    }
+
+    /**
+     * 绘制
+     * @param hdc
+     * @return 是否重绘
+     */
+    bool startPaint(HDC hdc) {
+        // 没有视频，绘制黑色
+        if (!wallpaperWindow->decoderAvailable()) {
+            HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+            RECT rect = {0};
+            rect.right = wallpaperWindow->GetWidth();
+            rect.bottom = wallpaperWindow->GetHeight();
+            FillRect(hdc, &rect, hBrush);
+            DeleteObject(hBrush);
+            return false;
+        }
+
+        // 暂停了
+        if (wallpaperWindow->decoderPaused()) {
+            return false;
+        }
+
+        // 还没加载第一帧
+        if (!wallpaperWindow->firstFrameLoaded()) {
+            return true;
+        }
+
+        SYSTEMTIME now;
+        GetSystemTime(&now);
+        double dt = toTime(now) - wallpaperWindow->lastTime;
+        if (wallpaperWindow->lastTime == 0) {
+            dt = 1.0 / dm.dmDisplayFrequency;
+        }
+        wallpaperWindow->lastTime = toTime(now);
+        wallpaperWindow->nowTime += dt;
+        wallpaperWindow->paint(hdc);
+        return true;
+    }
+
+    bool regHasValue(HKEY hkey, LPCWSTR subKey) {
+        return RegQueryValue(hkey, subKey, nullptr, nullptr) == ERROR_SUCCESS;
+    }
+
+    bool isRunOnStartup() {
+        DWORD size = 260;
+        WCHAR value[260];
+        DWORD err;
+        if ((err = RegGetValue(HKEY_CURRENT_USER, REG_RUN_KEY, APP_NAME,
+                               RRF_RT_REG_SZ, nullptr, value, &size))) {
+            if (err == ERROR_FILE_NOT_FOUND) {
+                return false;
+            }
+            error("RegQueryValueEx failed");
+        }
+        return exeWPath == value;
+    }
+
+    void setRunOnStartup(bool run) {
+        HKEY runKey;
+        if (RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_WRITE, &runKey)) {
+            error("RegOpenKeyEx failed");
+        }
+        if (run) {
+            if (RegSetValueEx(runKey, APP_NAME, 0, REG_SZ,
+                              (BYTE *) exeWPath.c_str(),
+                              static_cast<DWORD>(exeWPath.size() * sizeof(WCHAR)))) {
+                RegCloseKey(runKey);
+                error("RegSetValueEx failed");
+            }
+        } else {
+            if (regHasValue(runKey, APP_NAME)) {
+                if (RegDeleteValue(runKey, APP_NAME)) {
+                    RegCloseKey(runKey);
+                    error("RegDeleteValue failed");
+                }
+            }
+        }
+        RegCloseKey(runKey);
+    }
+
+    void createTray(HWND hWnd) {
+        dm.dmSize = sizeof(DEVMODE);
+        EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
+
+        nid.cbSize = sizeof(nid);
+        nid.hWnd = hWnd;
+        nid.uID = 0;
+        nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+        nid.uCallbackMessage = WM_USER;
+        nid.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
+        lstrcpy(nid.szTip, APP_NAME);
+        Shell_NotifyIcon(NIM_ADD, &nid);
+
+        trayMenu = CreatePopupMenu();
+
+        AppendMenu(trayMenu,
+                   isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
+                   GetStr(IDS_RUN_ON_STARTUP).c_str());
+        AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GetStr(IDS_CHOOSE_FILE).c_str());
+        AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
+        AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GetStr(IDS_EXIT).c_str());
+        Shell_NotifyIcon(NIM_ADD, &nid);
+    }
+
+    void onMenuClick(HWND hWnd, int id) {
+        switch (id) {
+            case PMID_EXIT:
+                DestroyWindow(hWnd);
+                break;
+            case PMID_CHANGE: {
+
+                OPENFILENAME ofn;
+                WCHAR szFile[260];
+
+                ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize = sizeof(ofn);
+                ofn.hwndOwner = hWnd;
+                ofn.lpstrFile = szFile;
+                ofn.lpstrFile[0] = '\0';
+                ofn.nMaxFile = sizeof(szFile);
+                ofn.lpstrFilter = TEXT("video(*.mp4)\0*.mp4\0\0");
+                ofn.nFilterIndex = 1;
+                ofn.lpstrFileTitle = nullptr;
+                ofn.nMaxFileTitle = 0;
+                ofn.lpstrInitialDir = nullptr;
+                ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+                if (GetOpenFileName(&ofn)) {
+                    wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
+                    InvalidateRect(hWnd, nullptr, FALSE);
+                }
+                break;
+            }
+            case PMID_RUN_ON_STARTUP: {
+                setRunOnStartup(!isRunOnStartup());
+                break;
+            }
+        }
     }
 }
 
+using namespace hww;
+
 WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
-    RegisterWndClass(hInstance);
+    registerWndClass(hInstance);
     wallpaperWindow = this;
 
     hWnd = CreateWindowEx(0,
@@ -67,34 +243,20 @@ void WallpaperWindow::Show() {
     UpdateWindow(hWnd);
 }
 
-HWND PMWindow() {
-    return FindWindow(TEXT("Progman"), TEXT("Program Manager"));
-}
-
-HWND splitDesktopWindow() {
-    HWND hWnd = PMWindow();
-    if (hWnd != nullptr) {
-        SendMessage(hWnd, 0x052C, 0, 0);
-    }
-    return hWnd;
-}
-
-BOOL CALLBACK CloseWorker2(HWND tophandle, LPARAM _) {
-    HWND defview = FindWindowEx(tophandle, nullptr, TEXT("SHELLDLL_DefView"), nullptr);
-    if (defview != nullptr) {
-        ShowWindow(FindWindowEx(nullptr, tophandle, TEXT("WorkerW"), nullptr), SW_HIDE);
-    }
-    return true;
-}
-
 HWND WallpaperWindow::FindExist() {
-    HWND hwnd = FindWindowEx(PMWindow(), nullptr, HWallpaperWindowClassName, nullptr);
+    HWND hwnd = FindWindowEx(pmWindow(), nullptr, HWallpaperWindowClassName, nullptr);
     return hwnd;
 }
 
 void WallpaperWindow::SetToDesktop() {
     HWND desktop = splitDesktopWindow();
-    EnumWindows(CloseWorker2, 0);
+    EnumWindows([](HWND hwnd, LPARAM _) -> BOOL {
+        if (FindWindowEx(hwnd, nullptr, TEXT("SHELLDLL_DefView"), nullptr) != nullptr) {
+            ShowWindow(FindWindowEx(nullptr, hwnd, TEXT("WorkerW"), nullptr), SW_HIDE);
+            return FALSE;
+        }
+        return TRUE;
+    }, 0);
     SetParent(hWnd, desktop);
 }
 
@@ -216,173 +378,12 @@ int WallpaperWindow::GetHeight() const {
     return height;
 }
 
-DEVMODE dm;
-HMENU trayMenu;
-NOTIFYICONDATA nid;
-HANDLE hMapFile = nullptr;
-
-double toTime(SYSTEMTIME t) {
-    return (t.wHour * 3600 + t.wMinute * 60 + t.wSecond) + t.wMilliseconds / 1000.0;
-}
-
-void CreateMapping() {
-    hMapFile = CreateFileMapping(
-            INVALID_HANDLE_VALUE,
-            nullptr,
-            PAGE_READWRITE,
-            0,
-            sizeof(double),
-            HW_FM_VIDEO);
-    if (hMapFile == nullptr) {
-        error("CreateFileMappingW failed");
-    }
-}
-
-/**
- * 绘制
- * @param hdc
- * @return 是否重绘
- */
-bool StartPaint(HDC hdc) {
-    // 没有视频，绘制黑色
-    if (!wallpaperWindow->decoderAvailable()) {
-        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-        RECT rect = {0};
-        rect.right = wallpaperWindow->GetWidth();
-        rect.bottom = wallpaperWindow->GetHeight();
-        FillRect(hdc, &rect, hBrush);
-        DeleteObject(hBrush);
-        return false;
-    }
-
-    // 暂停了
-    if (wallpaperWindow->decoderPaused()) {
-        return false;
-    }
-
-    // 还没加载第一帧
-    if (!wallpaperWindow->firstFrameLoaded()) {
-        return true;
-    }
-
-    SYSTEMTIME now;
-    GetSystemTime(&now);
-    double dt = toTime(now) - wallpaperWindow->lastTime;
-    if (wallpaperWindow->lastTime == 0) {
-        dt = 1.0 / dm.dmDisplayFrequency;
-    }
-    wallpaperWindow->lastTime = toTime(now);
-    wallpaperWindow->nowTime += dt;
-    wallpaperWindow->paint(hdc);
-    return true;
-}
-
-bool RegHasValue(HKEY hkey, LPCWSTR subKey) {
-    return RegQueryValue(hkey, subKey, nullptr, nullptr) == ERROR_SUCCESS;
-}
-
-bool isRunOnStartup() {
-    DWORD size = 260;
-    WCHAR value[260];
-    DWORD err;
-    if ((err = RegGetValue(HKEY_CURRENT_USER, REG_RUN_KEY, APP_NAME,
-                           RRF_RT_REG_SZ, nullptr, value, &size))) {
-        if (err == ERROR_FILE_NOT_FOUND) {
-            return false;
-        }
-        error("RegQueryValueEx failed");
-    }
-    return exeWPath == value;
-}
-
-void setRunOnStartup(bool run) {
-    HKEY runKey;
-    if (RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_WRITE, &runKey)) {
-        error("RegOpenKeyEx failed");
-    }
-    if (run) {
-        if (RegSetValueEx(runKey, APP_NAME, 0, REG_SZ,
-                          (BYTE *) exeWPath.c_str(),
-                          static_cast<DWORD>(exeWPath.size() * sizeof(WCHAR)))) {
-            RegCloseKey(runKey);
-            error("RegSetValueEx failed");
-        }
-    } else {
-        if (RegHasValue(runKey, APP_NAME)) {
-            if (RegDeleteValue(runKey, APP_NAME)) {
-                RegCloseKey(runKey);
-                error("RegDeleteValue failed");
-            }
-        }
-    }
-    RegCloseKey(runKey);
-}
-
-void createTray(HWND hWnd) {
-    dm.dmSize = sizeof(DEVMODE);
-    EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
-
-    nid.cbSize = sizeof(nid);
-    nid.hWnd = hWnd;
-    nid.uID = 0;
-    nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-    nid.uCallbackMessage = WM_USER;
-    nid.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
-    lstrcpy(nid.szTip, APP_NAME);
-    Shell_NotifyIcon(NIM_ADD, &nid);
-
-    trayMenu = CreatePopupMenu();
-
-    AppendMenu(trayMenu,
-               isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
-               GetStr(IDS_RUN_ON_STARTUP).c_str());
-    AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GetStr(IDS_CHOOSE_FILE).c_str());
-    AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GetStr(IDS_EXIT).c_str());
-    Shell_NotifyIcon(NIM_ADD, &nid);
-}
-
-void onMenuClick(HWND hWnd, int id) {
-    switch (id) {
-        case PMID_EXIT:
-            DestroyWindow(hWnd);
-            break;
-        case PMID_CHANGE: {
-
-            OPENFILENAME ofn;
-            WCHAR szFile[260];
-
-            ZeroMemory(&ofn, sizeof(ofn));
-            ofn.lStructSize = sizeof(ofn);
-            ofn.hwndOwner = hWnd;
-            ofn.lpstrFile = szFile;
-            ofn.lpstrFile[0] = '\0';
-            ofn.nMaxFile = sizeof(szFile);
-            ofn.lpstrFilter = TEXT("video(*.mp4)\0*.mp4\0\0");
-            ofn.nFilterIndex = 1;
-            ofn.lpstrFileTitle = nullptr;
-            ofn.nMaxFileTitle = 0;
-            ofn.lpstrInitialDir = nullptr;
-            ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-            if (GetOpenFileName(&ofn)) {
-                wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
-                InvalidateRect(hWnd, nullptr, FALSE);
-            }
-            break;
-        }
-        case PMID_RUN_ON_STARTUP: {
-            setRunOnStartup(!isRunOnStartup());
-            break;
-        }
-    }
-}
-
-LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_CREATE: {
             createTray(hWnd);
 
-            CreateMapping();
+            createMapping();
             break;
         }
         case WM_SIZE:
@@ -395,7 +396,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            if (StartPaint(hdc)) {
+            if (startPaint(hdc)) {
                 InvalidateRect(hWnd, nullptr, FALSE);
             }
             EndPaint(hWnd, &ps);
