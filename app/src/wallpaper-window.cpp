@@ -6,14 +6,15 @@
 #include "wnd-utils.h"
 #include "config.h"
 #include "file-utils.h"
+#include "string-table.h"
 
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
 #define PMID_RUN_ON_STARTUP 3
 
-#define REG_RUN_KEY R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Run)"
+#define REG_RUN_KEY TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run")
 
-static const char *HWallpaperWindowClassName = "YJL-WALLPAPER";
+static const WCHAR *HWallpaperWindowClassName = TEXT("YJL-WALLPAPER");
 
 extern std::string appPath;
 extern std::string exePath;
@@ -39,7 +40,7 @@ void RegisterWndClass(HINSTANCE hInstance) {
     wndClass.hIconSm = nullptr;
 
     if (!RegisterClassEx(&wndClass)) {
-        error("RegisterClassExW failed");
+        error("RegisterClassEx failed");
     }
 }
 
@@ -48,7 +49,7 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
     wallpaperWindow = this;
 
     hWnd = CreateWindowEx(0,
-                          HWallpaperWindowClassName, "YJL_WALLPAPER",
+                          HWallpaperWindowClassName, TEXT("YJL_WALLPAPER"),
                           WS_POPUP | WS_VISIBLE | WS_MAXIMIZE,
                           0, 0,
                           GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
@@ -57,7 +58,7 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
                           nullptr);
 
     if (hWnd == nullptr) {
-        error("CreateWindowExW failed");
+        error("CreateWindowEx failed");
     }
 
     avformat_network_init();
@@ -69,21 +70,21 @@ void WallpaperWindow::Show() {
 }
 
 HWND PMWindow() {
-    return FindWindow("Progman", "Program Manager");
+    return FindWindow(TEXT("Progman"), TEXT("Program Manager"));
 }
 
 HWND splitDesktopWindow() {
     HWND hWnd = PMWindow();
     if (hWnd != nullptr) {
-        SendMessageW(hWnd, 0x052C, 0, 0);
+        SendMessage(hWnd, 0x052C, 0, 0);
     }
     return hWnd;
 }
 
 BOOL CALLBACK CloseWorker2(HWND tophandle, LPARAM _) {
-    HWND defview = FindWindowExA(tophandle, nullptr, "SHELLDLL_DefView", nullptr);
+    HWND defview = FindWindowEx(tophandle, nullptr, TEXT("SHELLDLL_DefView"), nullptr);
     if (defview != nullptr) {
-        ShowWindow(FindWindowExA(nullptr, tophandle, "WorkerW", nullptr), SW_HIDE);
+        ShowWindow(FindWindowEx(nullptr, tophandle, TEXT("WorkerW"), nullptr), SW_HIDE);
     }
     return true;
 }
@@ -289,43 +290,45 @@ std::wstring GetStartupPath() {
     return L"";
 }
 
-bool RegHasValue(HKEY hkey, LPCSTR subKey) {
-    return RegQueryValueA(hkey, subKey, nullptr, nullptr) == ERROR_SUCCESS;
+bool RegHasValue(HKEY hkey, LPCWSTR subKey) {
+    return RegQueryValue(hkey, subKey, nullptr, nullptr) == ERROR_SUCCESS;
 }
 
 bool isRunOnStartup() {
     DWORD size = 260;
-    CHAR value[260];
+    WCHAR value[260];
     DWORD err;
-    if ((err = RegGetValueA(HKEY_CURRENT_USER, REG_RUN_KEY, APP_NAME,
-                            RRF_RT_REG_SZ, nullptr, value, &size))) {
+    if ((err = RegGetValue(HKEY_CURRENT_USER, REG_RUN_KEY, APP_NAME,
+                           RRF_RT_REG_SZ, nullptr, value, &size))) {
         if (err == ERROR_FILE_NOT_FOUND) {
             return false;
         }
         error("RegQueryValueEx failed");
     }
-    return exePath == value;
+    return exeWPath == value;
 }
 
 void setRunOnStartup(bool run) {
     HKEY runKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_WRITE, &runKey)) {
+    if (RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_WRITE, &runKey)) {
         error("RegOpenKeyEx failed");
     }
     if (run) {
-        if (RegSetValueExA(runKey, APP_NAME, 0, REG_SZ, (BYTE *) exePath.c_str(),
-                           (DWORD) exePath.size())) {
+        if (RegSetValueEx(runKey, APP_NAME, 0, REG_SZ,
+                          (BYTE *) exeWPath.c_str(),
+                          static_cast<DWORD>(exeWPath.size() * sizeof(WCHAR)))) {
             RegCloseKey(runKey);
             error("RegSetValueEx failed");
         }
     } else {
         if (RegHasValue(runKey, APP_NAME)) {
-            if (RegDeleteValueA(runKey, APP_NAME)) {
+            if (RegDeleteValue(runKey, APP_NAME)) {
                 RegCloseKey(runKey);
                 error("RegDeleteValue failed");
             }
         }
     }
+    RegCloseKey(runKey);
 }
 
 LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -339,15 +342,19 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             nid.uID = 0;
             nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
             nid.uCallbackMessage = WM_USER;
-            nid.hIcon = LoadIcon(GetModuleHandleW(nullptr), MAKEINTRESOURCE(IDI_ICON1));
+            nid.hIcon = LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
             lstrcpy(nid.szTip, APP_NAME);
             Shell_NotifyIcon(NIM_ADD, &nid);
 
             trayMenu = CreatePopupMenu();
-            AppendMenu(trayMenu, isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP, "开机启动");
-            AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, "选择文件");
+
+
+            AppendMenu(trayMenu,
+                       isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
+                       GetStr(IDS_RUN_ON_STARTUP).c_str());
+            AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GetStr(IDS_CHOOSE_FILE).c_str());
             AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
-            AppendMenu(trayMenu, MF_STRING, PMID_EXIT, "退出");
+            AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GetStr(IDS_EXIT).c_str());
             Shell_NotifyIcon(NIM_ADD, &nid);
 
             CreateMapping();
@@ -383,7 +390,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     case PMID_CHANGE: {
 
                         OPENFILENAME ofn;
-                        CHAR szFile[260];
+                        WCHAR szFile[260];
 
                         ZeroMemory(&ofn, sizeof(ofn));
                         ofn.lStructSize = sizeof(ofn);
@@ -391,14 +398,14 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                         ofn.lpstrFile = szFile;
                         ofn.lpstrFile[0] = '\0';
                         ofn.nMaxFile = sizeof(szFile);
-                        ofn.lpstrFilter = "video(*.mp4)\0*.mp4\0\0";
+                        ofn.lpstrFilter = TEXT("video(*.mp4)\0*.mp4\0\0");
                         ofn.nFilterIndex = 1;
                         ofn.lpstrFileTitle = nullptr;
                         ofn.nMaxFileTitle = 0;
                         ofn.lpstrInitialDir = nullptr;
                         ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
                         if (GetOpenFileName(&ofn)) {
-                            wallpaperWindow->SetVideo(ofn.lpstrFile);
+                            wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
                             InvalidateRect(hWnd, nullptr, FALSE);
                         }
                         break;
@@ -441,7 +448,7 @@ LRESULT WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             break;
         }
         default:
-            return DefWindowProcW(hWnd, msg, wParam, lParam);
+            return DefWindowProc(hWnd, msg, wParam, lParam);
     }
     return 0;
 }

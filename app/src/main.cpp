@@ -31,7 +31,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         HWND hWnd = WallpaperWindow::FindExist();
         if (argc > 1) {
-            PostMessageW(hWnd, WM_APP_VIDEO_FILE, 0, 0);
+            PostMessage(hWnd, WM_APP_VIDEO_FILE, 0, 0);
             HANDLE hMapFile;
             char *pData;
 
@@ -55,7 +55,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
             UnmapViewOfFile(pData);
             CloseHandle(hMapFile);
         } else
-            MessageBox(nullptr, "H-Wallpaper is already running.", "Error", MB_OK | MB_ICONERROR);
+            MessageBox(nullptr, TEXT("H-Wallpaper is already running."), TEXT("Error"), MB_OK | MB_ICONERROR);
         end:
         return ERROR_ALREADY_EXISTS;
     }
@@ -86,7 +86,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
-        DispatchMessageW(&msg);
+        DispatchMessage(&msg);
     }
     queryRun.store(false);
     queryMaximizedThread.join();

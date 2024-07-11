@@ -1,3 +1,10 @@
 #include <resources.h>
 
 IDI_ICON1 ICON DISCARDABLE "app_icon.ico"
+
+STRINGTABLE
+{
+    IDS_EXIT,   "退出"
+    IDS_CHOOSE_FILE, "选择文件"
+    IDS_RUN_ON_STARTUP, "开机启动"
+}

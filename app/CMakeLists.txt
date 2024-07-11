@@ -20,8 +20,9 @@ set(FFMPEG_LIBS
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
 
 add_definitions(
-        -DAPP_NAME="h-wallpaper"
-        -DAPP_VERSION="1.0"
+        -DUNICODE
+        -DAPP_NAME=L"h-wallpaper"
+        -DAPP_VERSION=1.0
 )
 
 #########
