@@ -265,8 +265,10 @@ void WallpaperWindow::SetVideo(const std::string &file, bool save) {
         return;
     VideoDecoder *nd;
     try {
+        wallpaperWindow->pause();
         nd = new VideoDecoder(file);
     } catch (...) {
+        wallpaperWindow->resume();
         return;
     }
     {
@@ -362,6 +364,7 @@ void WallpaperWindow::resume() {
     auto decoder = decoderPtr.load();
     if (decoder) {
         decoder->resume();
+        wallpaperWindow->lastTime = 0;
     }
     InvalidateRect(hWnd, nullptr, false);
 }
@@ -425,7 +428,6 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 if (!wallpaperWindow->decoderPaused())
                     wallpaperWindow->pause();
             } else if (wallpaperWindow->decoderPaused()) {
-                wallpaperWindow->lastTime = 0;
                 wallpaperWindow->resume();
             }
             break;
