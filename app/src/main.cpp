@@ -13,8 +13,9 @@ string appPath;
 string exePath;
 wstring exeWPath;
 
-void closeMutex() {
+void onexit() {
     CloseHandle(hMutex);
+    SaveConfig();
 }
 
 extern WallpaperWindow *wallpaperWindow;
@@ -64,7 +65,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         MessageBox(nullptr, TEXT("H-Wallpaper is already running."), TEXT("Error"), MB_OK | MB_ICONERROR);
         return ERROR_ALREADY_EXISTS;
     }
-    atexit(closeMutex);
+    atexit(onexit);
 
     initConfig();
     wallpaperWindow = new WallpaperWindow(hInstance);
