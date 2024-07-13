@@ -54,7 +54,7 @@ private:
     AVPacket avpkt = {};
     AVFrame *frame = nullptr;
     int stream_index = -1;
-    int frame_count = 0;
+    bool loadedFirstFrame = false;
 
     std::mutex mtx;
     std::condition_variable cv;
@@ -147,4 +147,13 @@ public:
      * @return 解码器是否处于暂停状态
      */
     bool paused() const;
+
+    /**
+     * @brief 跳转到指定帧
+     *
+     * @param time 时间
+     */
+    void seekTo(double time);
+
+    void waitDecodeNextFrame();
 };

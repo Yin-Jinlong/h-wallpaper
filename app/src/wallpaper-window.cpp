@@ -260,7 +260,7 @@ void WallpaperWindow::SetToDesktop() {
     SetParent(hWnd, desktop);
 }
 
-void WallpaperWindow::SetVideo(const std::string &file, bool save) {
+void WallpaperWindow::SetVideo(const std::string &file, bool save, double seekTime) {
     if (file.empty())
         return;
     VideoDecoder *nd;
@@ -290,14 +290,20 @@ void WallpaperWindow::SetVideo(const std::string &file, bool save) {
     nd->height = height;
     decoderPtr.store(nd);
     if (save) {
-        config["wallpaper"] = file;
+        config.wallpaper.file = file;
         SaveConfig();
+    }
+    nd->waitDecodeNextFrame();
+    if (seekTime > 0) {
+        SeekTo(seekTime);
     }
     nd->startDecode();
     InvalidateRect(hWnd, nullptr, false);
 }
 
 WallpaperWindow::~WallpaperWindow() {
+    SaveConfig();
+
     auto decoder = decoderPtr.load();
     if (decoder) {
         decoder->close();
@@ -314,6 +320,7 @@ void WallpaperWindow::paint(HDC hdc) {
     auto vf = decoder->getFrame();
     if (!vf)
         return;
+    config.wallpaper.time = av_q2d(decoder->time_base) * vf->pts;
     HDC mdc = CreateCompatibleDC(hdc);
 
     HBITMAP hBitmap = vf->bitmap;
@@ -379,6 +386,15 @@ int WallpaperWindow::GetWidth() const {
 
 int WallpaperWindow::GetHeight() const {
     return height;
+}
+
+void WallpaperWindow::SeekTo(double time) {
+    auto decoder = decoderPtr.load();
+    if (decoder) {
+        decoder->seekTo(time);
+        nowTime = time;
+        frameTime = time;
+    }
 }
 
 LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {

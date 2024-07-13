@@ -4,7 +4,14 @@
 
 #include <yaml-cpp/yaml.h>
 
-extern YAML::Node config;
+struct HWallpaperConfig {
+    struct {
+        std::string file;
+        double time;
+    } wallpaper;
+};
+
+extern HWallpaperConfig config;
 
 /**
  * @brief 初始化配置

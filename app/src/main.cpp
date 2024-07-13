@@ -1,4 +1,5 @@
 #include <pre.h>
+#include <csignal>
 
 #include "wallpaper-window.h"
 #include "config.h"
@@ -73,8 +74,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     if (argc > 1)
         wallpaperWindow->SetVideo(wstring2string(args[1]));
-    else if (config["wallpaper"].IsScalar())
-        wallpaperWindow->SetVideo(config["wallpaper"].as<string>(), false);
+    else if (!config.wallpaper.file.empty()) {
+        wallpaperWindow->SetVideo(config.wallpaper.file, false, config.wallpaper.time);
+    }
 
     std::atomic<bool> queryRun = true;
 

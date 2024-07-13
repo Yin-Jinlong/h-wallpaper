@@ -159,7 +159,8 @@ void VideoDecoder::_decode() {
         }
         av_packet_unref(&avpkt);
     } else if (r == AVERROR_EOF) {
-        av_seek_frame(fmt_ctx, 0, 0, AVSEEK_FLAG_BACKWARD);
+        frame->best_effort_timestamp = 0;
+        av_seek_frame(fmt_ctx, stream_index, 0, AVSEEK_FLAG_BACKWARD);
     }
 }
 
@@ -190,7 +191,9 @@ bool VideoDecoder::addFrame() {
     rgbFrame->height = height;
     rgbFrame->format = AV_PIX_FMT_BGR24;
     rgbFrame->duration = frame->duration;
+    rgbFrame->pts = frame->pts;
     av_frame_get_buffer(rgbFrame, 32);
+    av_frame_copy_props(rgbFrame, frame);
 
     // 进行颜色空间转换
     sws_scale(img_convert_ctx,
@@ -203,7 +206,7 @@ bool VideoDecoder::addFrame() {
             .width = rgbFrame->width,
             .height = rgbFrame->height,
             .pts = rgbFrame->pts,
-            .duration = rgbFrame->duration
+            .duration = rgbFrame->duration,
     };
 
 
@@ -215,7 +218,6 @@ bool VideoDecoder::addFrame() {
     auto thread = threadPtr.load();
     if (thread && thread->running()) {
         frames.push(vf);
-        frame_count++;
     } else {
         lock.unlock();
         return false;
@@ -246,7 +248,7 @@ bool VideoDecoder::running() const {
 }
 
 bool VideoDecoder::firstFrameLoaded() const {
-    return frame_count > 0;
+    return loadedFirstFrame;
 }
 
 bool VideoDecoder::paused() const {
@@ -262,5 +264,30 @@ void VideoDecoder::resume() {
     auto thread = threadPtr.load();
     if (thread) {
         thread->notify();
+    }
+}
+
+void VideoDecoder::seekTo(double time) {
+    if (time < 0) {
+        time = 0;
+    }
+    auto timestamp = static_cast<int64_t>(time / av_q2d(time_base));
+    if (av_seek_frame(fmt_ctx, stream_index, timestamp, AVSEEK_FLAG_BACKWARD) < 0) {
+        error_not_throw(std::format("Could not seek to {}s", time));
+        return;
+    }
+    std::unique_lock<std::mutex> lock(mtx);
+    while (!frames.empty())
+        frames.pop();
+    lock.unlock();
+    waitDecodeNextFrame();
+}
+
+void VideoDecoder::waitDecodeNextFrame() {
+    try {
+        _decode();
+        loadedFirstFrame = true;
+    } catch (...) {
+        error_not_throw("Could not decode first frame");
     }
 }

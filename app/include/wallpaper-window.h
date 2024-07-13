@@ -73,7 +73,14 @@ public:
      *
      * @param file 视频文件
      */
-    void SetVideo(const std::string &file, bool save = true);
+    void SetVideo(const std::string &file, bool save = true, double seekTime = 0.0);
+
+    /**
+     * @brief 跳转到指定帧
+     *
+     * @param time 时间
+     */
+    void SeekTo(double time);
 
     /**
      * 绘制壁纸
