@@ -115,8 +115,9 @@ namespace hww {
         return true;
     }
 
-    bool regHasValue(HKEY hkey, LPCWSTR subKey) {
-        return RegQueryValue(hkey, subKey, nullptr, nullptr) == ERROR_SUCCESS;
+    bool regHasValue(HKEY hkey, LPCWSTR subKey, LPCWSTR keyName) {
+        auto r = RegGetValue(hkey, subKey, keyName, RRF_RT_ANY, nullptr, nullptr, nullptr);
+        return r == ERROR_SUCCESS;
     }
 
     bool isRunOnStartup() {
@@ -135,7 +136,7 @@ namespace hww {
 
     void setRunOnStartup(bool run) {
         HKEY runKey;
-        if (RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_WRITE, &runKey)) {
+        if (RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_ALL_ACCESS, &runKey)) {
             error("RegOpenKeyEx failed");
         }
         if (run) {
@@ -146,7 +147,7 @@ namespace hww {
                 error("RegSetValueEx failed");
             }
         } else {
-            if (regHasValue(runKey, APP_NAME)) {
+            if (regHasValue(runKey, nullptr, APP_NAME)) {
                 if (RegDeleteValue(runKey, APP_NAME)) {
                     RegCloseKey(runKey);
                     error("RegDeleteValue failed");
