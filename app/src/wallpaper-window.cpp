@@ -5,6 +5,7 @@
 #include "config.h"
 #include "file-utils.h"
 #include "string-table.h"
+#include "sys-err.h"
 
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
@@ -117,6 +118,7 @@ namespace hww {
 
     bool regHasValue(HKEY hkey, LPCWSTR subKey, LPCWSTR keyName) {
         auto r = RegGetValue(hkey, subKey, keyName, RRF_RT_ANY, nullptr, nullptr, nullptr);
+        error_message(r);
         return r == ERROR_SUCCESS;
     }
 
@@ -129,6 +131,7 @@ namespace hww {
             if (err == ERROR_FILE_NOT_FOUND) {
                 return false;
             }
+            error_message(err);
             error("RegQueryValueEx failed");
         }
         return exeWPath == value;
@@ -136,21 +139,25 @@ namespace hww {
 
     void setRunOnStartup(bool run) {
         HKEY runKey;
-        if (RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_ALL_ACCESS, &runKey)) {
+        DWORD err;
+        if ((err = RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_ALL_ACCESS, &runKey))) {
             error("RegOpenKeyEx failed");
+            error_message(err);
         }
         if (run) {
-            if (RegSetValueEx(runKey, APP_NAME, 0, REG_SZ,
-                              (BYTE *) exeWPath.c_str(),
-                              static_cast<DWORD>(exeWPath.size() * sizeof(WCHAR)))) {
+            if ((err = RegSetValueEx(runKey, APP_NAME, 0, REG_SZ,
+                                     (BYTE *) exeWPath.c_str(),
+                                     static_cast<DWORD>(exeWPath.size() * sizeof(WCHAR))))) {
                 RegCloseKey(runKey);
                 error("RegSetValueEx failed");
+                error_message(err);
             }
         } else {
             if (regHasValue(runKey, nullptr, APP_NAME)) {
-                if (RegDeleteValue(runKey, APP_NAME)) {
+                if ((err = RegDeleteValue(runKey, APP_NAME))) {
                     RegCloseKey(runKey);
                     error("RegDeleteValue failed");
+                    error_message(err);
                 }
             }
         }
@@ -234,6 +241,7 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
 
     if (hWnd == nullptr) {
         error("CreateWindowEx failed");
+        error_message(GetLastError());
     }
 
     avformat_network_init();
