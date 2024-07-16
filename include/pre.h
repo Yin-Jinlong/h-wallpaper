@@ -17,6 +17,8 @@
 #define WM_APP_VIDEO_FILE (WM_APP+1)
 #define WM_APP_QUERY_MAXIMIZED (WM_APP+2)
 
+#define GET_CSTR(id) GetStr(id).c_str()
+
 /**
  * @brief 显示错误并抛出异常
  * @param msg 消息

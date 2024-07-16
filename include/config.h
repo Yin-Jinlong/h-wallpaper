@@ -4,9 +4,18 @@
 
 #include <yaml-cpp/yaml.h>
 
+enum class ContentFit {
+    CLIP,
+    CONTAIN,
+    STRETCH,
+    CENTER,
+    REPEAT,
+};
+
 struct HWallpaperConfig {
     struct {
         std::string file;
+        ContentFit fit;
         double time;
     } wallpaper;
 };

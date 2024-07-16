@@ -7,9 +7,15 @@
 #include "string-table.h"
 #include "sys-err.h"
 
+#define FIT_MENU_ID_START 100
+
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
 #define PMID_RUN_ON_STARTUP 3
+#define PMID_FIT_MENU(fit) (((int)ContentFit::fit)+FIT_MENU_ID_START)
+
+#define FIT_MENU_ITEM(fit) checkedFlag(ContentFit::fit), PMID_FIT_MENU(fit)
+#define CHECK_FIT_MENU_ITEM(fit) PMID_FIT_MENU(fit), checkedFlag(ContentFit::fit)
 
 #define REG_RUN_KEY TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run")
 
@@ -23,6 +29,7 @@ WallpaperWindow *wallpaperWindow;
 namespace hww {
     DEVMODE dm;
     HMENU trayMenu;
+    HMENU trayFitMenu;
     NOTIFYICONDATA nid;
     HANDLE hMapFile = nullptr;
 
@@ -164,6 +171,10 @@ namespace hww {
         RegCloseKey(runKey);
     }
 
+    int checkedFlag(ContentFit fit) {
+        return fit == config.wallpaper.fit ? MF_CHECKED : MF_UNCHECKED;
+    }
+
     void createTray(HWND hWnd) {
         dm.dmSize = sizeof(DEVMODE);
         EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
@@ -179,46 +190,60 @@ namespace hww {
 
         trayMenu = CreatePopupMenu();
 
+        trayFitMenu = CreatePopupMenu();
+
+        AppendMenu(trayFitMenu, FIT_MENU_ITEM(CLIP), GET_CSTR(IDS_FIT_MENU_CLIP));
+        AppendMenu(trayFitMenu, FIT_MENU_ITEM(CONTAIN), GET_CSTR(IDS_FIT_MENU_CONTAIN));
+        AppendMenu(trayFitMenu, FIT_MENU_ITEM(STRETCH), GET_CSTR(IDS_FIT_MENU_STRETCH));
+        AppendMenu(trayFitMenu, FIT_MENU_ITEM(CENTER), GET_CSTR(IDS_FIT_MENU_CENTER));
+        AppendMenu(trayFitMenu, FIT_MENU_ITEM(REPEAT), GET_CSTR(IDS_FIT_MENU_REPEAT));
+
         AppendMenu(trayMenu,
                    isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
-                   GetStr(IDS_RUN_ON_STARTUP).c_str());
-        AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GetStr(IDS_CHOOSE_FILE).c_str());
+                   GET_CSTR(IDS_RUN_ON_STARTUP));
         AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
-        AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GetStr(IDS_EXIT).c_str());
+        AppendMenu(trayMenu, MF_POPUP, (UINT_PTR) trayFitMenu, GET_CSTR(IDS_FIT_MENU));
+        AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GET_CSTR(IDS_CHOOSE_FILE));
+        AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
+        AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GET_CSTR(IDS_EXIT));
         Shell_NotifyIcon(NIM_ADD, &nid);
     }
 
     void onMenuClick(HWND hWnd, int id) {
-        switch (id) {
-            case PMID_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            case PMID_CHANGE: {
+        if (id > FIT_MENU_ID_START) {
+            config.wallpaper.fit = static_cast<ContentFit>(id - FIT_MENU_ID_START);
+        } else {
+            switch (id) {
+                case PMID_EXIT:
+                    DestroyWindow(hWnd);
+                    break;
+                case PMID_CHANGE: {
 
-                OPENFILENAME ofn;
-                WCHAR szFile[260];
+                    OPENFILENAME ofn;
+                    WCHAR szFile[260];
 
-                ZeroMemory(&ofn, sizeof(ofn));
-                ofn.lStructSize = sizeof(ofn);
-                ofn.hwndOwner = hWnd;
-                ofn.lpstrFile = szFile;
-                ofn.lpstrFile[0] = '\0';
-                ofn.nMaxFile = sizeof(szFile);
-                ofn.lpstrFilter = TEXT("video(*.mp4)\0*.mp4\0\0");
-                ofn.nFilterIndex = 1;
-                ofn.lpstrFileTitle = nullptr;
-                ofn.nMaxFileTitle = 0;
-                ofn.lpstrInitialDir = nullptr;
-                ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-                if (GetOpenFileName(&ofn)) {
-                    wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
-                    InvalidateRect(hWnd, nullptr, FALSE);
+                    ZeroMemory(&ofn, sizeof(ofn));
+                    ofn.lStructSize = sizeof(ofn);
+                    ofn.hwndOwner = hWnd;
+                    ofn.lpstrFile = szFile;
+                    ofn.lpstrFile[0] = '\0';
+                    ofn.nMaxFile = sizeof(szFile);
+                    ofn.lpstrFilter = TEXT("video(*.mp4)\0*.mp4\0\0");
+                    ofn.nFilterIndex = 1;
+                    ofn.lpstrFileTitle = nullptr;
+                    ofn.nMaxFileTitle = 0;
+                    ofn.lpstrInitialDir = nullptr;
+                    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+                    if (GetOpenFileName(&ofn)) {
+                        wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
+                        InvalidateRect(hWnd, nullptr, FALSE);
+                    }
+                    break;
                 }
-                break;
-            }
-            case PMID_RUN_ON_STARTUP: {
-                setRunOnStartup(!isRunOnStartup());
-                break;
+                case PMID_RUN_ON_STARTUP: {
+                    setRunOnStartup(!isRunOnStartup());
+                    break;
+                }
             }
         }
     }
@@ -438,6 +463,11 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             } else if (lParam == WM_RBUTTONDOWN) {
                 SetForegroundWindow(hWnd);
                 CheckMenuItem(trayMenu, PMID_RUN_ON_STARTUP, isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED);
+                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CLIP));
+                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CONTAIN));
+                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(STRETCH));
+                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CENTER));
+                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(REPEAT));
                 int id = TrackPopupMenuEx(trayMenu, TPM_RETURNCMD, pt.x, pt.y, hWnd, nullptr);
                 onMenuClick(hWnd, id);
             }

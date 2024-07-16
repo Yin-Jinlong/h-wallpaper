@@ -1,10 +1,18 @@
 #include <resources.h>
 
+// @formatter:off
 IDI_ICON1 ICON DISCARDABLE "app_icon.ico"
+// @formatter:on
 
 STRINGTABLE
 {
-    IDS_EXIT,   "退出"
-    IDS_CHOOSE_FILE, "选择文件"
-    IDS_RUN_ON_STARTUP, "开机启动"
+IDS_EXIT,   "退出"
+IDS_CHOOSE_FILE, "选择文件"
+IDS_RUN_ON_STARTUP, "开机启动"
+IDS_FIT_MENU,"适应方式"
+IDS_FIT_MENU_CLIP, "裁剪"
+IDS_FIT_MENU_CONTAIN, "适应"
+IDS_FIT_MENU_STRETCH, "拉伸"
+IDS_FIT_MENU_CENTER, "居中"
+IDS_FIT_MENU_REPEAT, "重复"
 }
