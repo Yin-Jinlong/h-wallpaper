@@ -109,7 +109,7 @@ VideoDecoder::~VideoDecoder() {
     while (!frames.empty()) {
         auto vf = frames.front();
         frames.pop();
-        DeleteObject(vf.bitmap);
+        free(vf.data);
     }
 }
 
@@ -178,9 +178,11 @@ void VideoDecoder::close() {
 }
 
 bool VideoDecoder::addFrame() {
+    auto width = Min(frame->width, maxWidth);
+    auto height = Min(frame->height, maxHeight);
     struct SwsContext *img_convert_ctx = sws_getContext(
             frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
-            width, height, AV_PIX_FMT_BGR24,
+            width, height, AV_PIX_FMT_RGBA,
             SWS_BILINEAR, nullptr, nullptr, nullptr);
 
     if (!img_convert_ctx)
@@ -189,7 +191,7 @@ bool VideoDecoder::addFrame() {
     AVFrame *rgbFrame = av_frame_alloc();
     rgbFrame->width = width;
     rgbFrame->height = height;
-    rgbFrame->format = AV_PIX_FMT_BGR24;
+    rgbFrame->format = AV_PIX_FMT_RGBA;
     rgbFrame->duration = frame->duration;
     rgbFrame->pts = frame->pts;
     av_frame_get_buffer(rgbFrame, 32);
@@ -200,9 +202,12 @@ bool VideoDecoder::addFrame() {
               (const uint8_t *const *) frame->data, frame->linesize, 0, frame->height,
               rgbFrame->data, rgbFrame->linesize);
 
+    int size = rgbFrame->width * rgbFrame->height * 4;
+    auto data = (RGBAColor *) malloc(size);
+    memcpy(data, rgbFrame->data[0], size);
 
     struct VideoFrame vf = {
-            .bitmap = avframe_to_hbitmap(rgbFrame),
+            .data = data,
             .width = rgbFrame->width,
             .height = rgbFrame->height,
             .pts = rgbFrame->pts,

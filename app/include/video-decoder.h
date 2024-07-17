@@ -4,6 +4,7 @@
 
 #include <queue>
 #include <mutex>
+#include "color.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -19,9 +20,9 @@ extern "C" {
  */
 struct VideoFrame {
     /**
-     * @brief 帧的位图
+     * @brief 帧RGB数据
      */
-    HBITMAP bitmap = nullptr;
+    RGBAColor *data = nullptr;
     /**
      * @brief 帧的宽度
      */
@@ -89,9 +90,9 @@ private:
 public:
 
     /**
-     * @brief 帧的宽高
+     * @brief 帧的最大宽高
      */
-    int width = -1, height = -1;
+    int maxWidth = -1, maxHeight = -1;
 
     /**
      * @brief 帧的时间基

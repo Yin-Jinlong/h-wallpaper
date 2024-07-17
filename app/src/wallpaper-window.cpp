@@ -6,6 +6,7 @@
 #include "file-utils.h"
 #include "string-table.h"
 #include "sys-err.h"
+#include "image-util.h"
 
 #define FIT_MENU_ID_START 100
 
@@ -119,7 +120,16 @@ namespace hww {
         }
         wallpaperWindow->lastTime = toTime(now);
         wallpaperWindow->nowTime += dt;
-        wallpaperWindow->paint(hdc);
+
+        HDC mdc = CreateCompatibleDC(hdc);
+        auto vf = wallpaperWindow->paint(mdc);
+        if (vf) {
+            BitBlt(hdc, 0, 0,
+                   wallpaperWindow->GetWidth(),
+                   wallpaperWindow->GetHeight(),
+                   mdc, 0, 0, SRCCOPY);
+        }
+        DeleteDC(mdc);
         return true;
     }
 
@@ -320,8 +330,8 @@ void WallpaperWindow::SetVideo(const std::string &file, bool save, double seekTi
     // 到此步屏幕（窗口）尺寸已经有了 //
     // 前面WM_SIZE已经处理过了     //
     //**************************//
-    nd->width = width;
-    nd->height = height;
+    nd->maxWidth = width;
+    nd->maxHeight = height;
     decoderPtr.store(nd);
     if (save) {
         config.wallpaper.file = file;
@@ -346,32 +356,53 @@ WallpaperWindow::~WallpaperWindow() {
     }
 }
 
-void WallpaperWindow::paint(HDC hdc) {
+VideoFrame *WallpaperWindow::paint(HDC hdc) {
     auto decoder = decoderPtr.load();
     if (!decoder || frameTime > nowTime)
-        return;
+        return nullptr;
 
     auto vf = decoder->getFrame();
-    if (!vf)
-        return;
+    if (!vf || !vf->data)
+        return nullptr;
     config.wallpaper.time = av_q2d(decoder->time_base) * vf->pts;
-    HDC mdc = CreateCompatibleDC(hdc);
-
-    HBITMAP hBitmap = vf->bitmap;
-
     auto dt = av_q2d(decoder->time_base) * vf->duration;
     frameTime += dt;
 
-    SelectObject(mdc, hBitmap);
+    SkImageInfo info = SkImageInfo::Make(vf->width, vf->height, kRGBA_8888_SkColorType, kOpaque_SkAlphaType);
+    SkBitmap frameBitmap;
+    if (!frameBitmap.installPixels(info, vf->data, info.minRowBytes())) {
+        free(vf->data);
+        vf->data = nullptr;
+        return nullptr;
+    }
 
-    // 缩放已经处理，用BitBlt更高效
-    //StretchBlt(hdc, 0, 0, width, height,
-    //           mdc, 0, 0, vf->width, vf->height,
-    //           SRCCOPY
-    //);
-    BitBlt(hdc, 0, 0, vf->width, vf->height, mdc, 0, 0, SRCCOPY);
+    auto canvas = surface->getCanvas();
+    canvas->clear(SK_ColorCYAN);
+    canvas->drawImageRect(frameBitmap.asImage(), SkRect(0, 0, width, height), SkSamplingOptions());
+    surface->flush();
+
+    BITMAPINFO bi;
+    ZeroMemory(&bi, sizeof(bi));
+    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bi.bmiHeader.biWidth = width;
+    bi.bmiHeader.biHeight = -height;
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 24;
+    bi.bmiHeader.biCompression = BI_RGB;
+
+    HBITMAP hBitmap = CreateDIBSection(hdc, &bi, DIB_RGB_COLORS, nullptr, nullptr, 0);
+    SelectObject(hdc, hBitmap);
+
+    auto pixels = SkImageGetBgr888Pixels(surface->makeImageSnapshot().get());
+
+    if (pixels) {
+        SetDIBits(hdc, hBitmap, 0, height, pixels, &bi, DIB_RGB_COLORS);
+        free(pixels);
+    }
     DeleteObject(hBitmap);
-    DeleteDC(mdc);
+    free(vf->data);
+    vf->data = nullptr;
+    return vf;
 }
 
 bool WallpaperWindow::decoderAvailable() {
@@ -387,6 +418,12 @@ bool WallpaperWindow::firstFrameLoaded() {
 void WallpaperWindow::SetSize(int width, int height) {
     this->width = width;
     this->height = height;
+
+    SkImageInfo info = SkImageInfo::Make(
+            width, height,
+            kRGBA_8888_SkColorType, kOpaque_SkAlphaType
+    );
+    surface = SkSurfaces::Raster(info);
 }
 
 bool WallpaperWindow::decoderPaused() {

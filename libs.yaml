@@ -12,6 +12,13 @@ libs:
         - "ffmpeg-n7.0-latest-win64-lgpl-shared-7.0/lib/.*\.lib"
       libs/ffmpeg/include/:
         - "ffmpeg-n7.0-latest-win64-lgpl-shared-7.0/include/"
+  skia:
+    type: zip
+    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/v0.38.2/skia-v0.38.2-default-release-win-x64.zip
+    download-name: skia-v0.38.2-default-release-win-x64.zip
+    libs:
+      libs/skia/:
+        - "/"
   yaml-cpp:
     type: git
     url: https://github.com/jbeder/yaml-cpp.git

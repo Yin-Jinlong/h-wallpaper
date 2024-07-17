@@ -10,6 +10,16 @@
 
 #include "str-utils.h"
 
+#ifdef min
+#undef min
+#define Min(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#ifdef max
+#undef max
+#define Max(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 #define MAX_FRAMES 2
 
 #define HW_FM_VIDEO L"h-wallpaper-video"

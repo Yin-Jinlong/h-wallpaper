@@ -2,6 +2,12 @@
 
 #include <pre.h>
 
+#include <include/core/SkBitmap.h>
+#include <include/core/SkCanvas.h>
+#include <include/core/SkColorSpace.h>
+#include <include/core/SkImage.h>
+#include <include/core/SkSurface.h>
+
 #include "video-decoder.h"
 
 extern "C" {
@@ -31,6 +37,8 @@ private:
      * 窗口宽高
      */
     int width = 0, height = 0;
+
+    sk_sp<SkSurface> surface;
 
 public:
 
@@ -87,7 +95,7 @@ public:
      *
      * @param hdc 绘图设备
      */
-    void paint(HDC hdc);
+    VideoFrame *paint(HDC hdc);
 
     /**
      * 解码器可用

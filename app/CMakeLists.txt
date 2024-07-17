@@ -7,16 +7,6 @@ project(h-wallpaper)
 set(CMAKE_CXX_STANDARD 23)
 set(YAML_BUILD_SHARED_LIBS ON)
 
-set(FFMPEG_LIBS
-        avcodec
-        # avdevice
-        # avfilter
-        avformat
-        avutil
-        swresample
-        swscale
-)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
 
 add_definitions(
@@ -36,6 +26,7 @@ set_msvc_utf_8()
 ###########
 
 find_package(ffmpeg)
+find_package(skia)
 find_package(yaml-cpp)
 
 #########
@@ -45,18 +36,13 @@ find_package(yaml-cpp)
 include_directories(
         "../include"
         "include"
-        ${FFMPEG_INCLUDE_DIR}
-        ${YAML_CPP_INCLUDE_DIR}
 )
 
 ###########
 # 链接目录 #
 ###########
 
-link_directories(
-        ${FFMPEG_LIB_DIR}
-        ${YAML_CPP_LIB_DIR}
-)
+#link_directories()
 
 ##########
 # 主程序 #
@@ -70,7 +56,19 @@ add_executable(${PROJECT_NAME} WIN32
 )
 
 target_link_libraries(${PROJECT_NAME}
-        ${FFMPEG_LIBS}
+        # ffmpeg
+        avcodec
+        # avdevice
+        # avfilter
+        avformat
+        avutil
+        swresample
+        swscale
+
+        # skia
+        skia.dll.lib
+
+        # yaml-cp
         ${YAML_CPP_LIBS}
 )
 
@@ -79,13 +77,16 @@ target_link_libraries(${PROJECT_NAME}
 #########
 
 file(GLOB DLLS
-        "${FFMPEG_HOME}/bin/avcodec-61.dll"
-        # "${FFMPEG_HOME}/bin/avdevice-61.dll"
-        # "${FFMPEG_HOME}/bin/avfilter-10.dll"
-        "${FFMPEG_HOME}/bin/avformat-61.dll"
-        "${FFMPEG_HOME}/bin/avutil-59.dll"
-        "${FFMPEG_HOME}/bin/swresample-5.dll"
-        "${FFMPEG_HOME}/bin/swscale-8.dll"
+        "${FFMPEG_BIN_DIR}/avcodec-61.dll"
+        # "${FFMPEG_BIN_DIR}/avdevice-61.dll"
+        # "${FFMPEG_BIN_DIR}/avfilter-10.dll"
+        "${FFMPEG_BIN_DIR}/avformat-61.dll"
+        "${FFMPEG_BIN_DIR}/avutil-59.dll"
+        "${FFMPEG_BIN_DIR}/swresample-5.dll"
+        "${FFMPEG_BIN_DIR}/swscale-8.dll"
+        # skia
+        "${SKIA_BIN_DIR}/skia.dll"
+        # yaml-cpp
         "${YAML_CPP_BIN_DIR}/*.dll"
 )
 
@@ -102,4 +103,3 @@ endforeach ()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES ${DLLS} DESTINATION .)
-#install(TARGETS yaml-cpp DESTINATION .)

@@ -45,9 +45,11 @@ export async function extract(name: string, lib: ZipLib) {
         let patternMap = new Map<RegExp | string, string>()
         for (let dst in lib.libs) {
             for (let pattern of lib.libs[dst]) {
-                if (pattern.endsWith('/'))
+                if (pattern.endsWith('/')) {
+                    if (pattern == '/')
+                        pattern = ''
                     patternMap.set(pattern, dst)
-                else
+                } else
                     patternMap.set(new RegExp(pattern), dst)
             }
         }
