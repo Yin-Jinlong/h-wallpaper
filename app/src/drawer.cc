@@ -99,8 +99,20 @@ void Drawer::DrawImage(SkImage *image, ContentFit fit) {
             dst.offset(dw, dh);
             break;
         }
-        case ContentFit::REPEAT:
+        case ContentFit::REPEAT: {
+            int countX = (int) ceil(width / imgW);
+            int countY = (int) ceil(height / imgH);
+            float endX, endY = 0;
+            for (int i = 0; i < countY; ++i) {
+                endX = 0;
+                for (int j = 0; j < countX; ++j) {
+                    canvas->drawImage(image, endX, endY);
+                    endX += imgW;
+                }
+                endY += imgH;
+            }
             break;
+        }
         default:
             return;
     }
