@@ -2,8 +2,6 @@
 
 #include "resources.h"
 #include "wnd-utils.h"
-#include "config.h"
-#include "file-utils.h"
 #include "string-table.h"
 #include "sys-err.h"
 #include "image-util.h"
@@ -122,8 +120,7 @@ namespace hww {
         wallpaperWindow->nowTime += dt;
 
         HDC mdc = CreateCompatibleDC(hdc);
-        auto vf = wallpaperWindow->paint(mdc);
-        if (vf) {
+        if (wallpaperWindow->paint(mdc)) {
             BitBlt(hdc, 0, 0,
                    wallpaperWindow->GetWidth(),
                    wallpaperWindow->GetHeight(),
@@ -220,7 +217,7 @@ namespace hww {
     }
 
     void onMenuClick(HWND hWnd, int id) {
-        if (id > FIT_MENU_ID_START) {
+        if (id >= FIT_MENU_ID_START) {
             config.wallpaper.fit = static_cast<ContentFit>(id - FIT_MENU_ID_START);
         } else {
             switch (id) {
@@ -356,53 +353,19 @@ WallpaperWindow::~WallpaperWindow() {
     }
 }
 
-VideoFrame *WallpaperWindow::paint(HDC hdc) {
+bool WallpaperWindow::paint(HDC hdc) {
     auto decoder = decoderPtr.load();
     if (!decoder || frameTime > nowTime)
-        return nullptr;
+        return false;
 
     auto vf = decoder->getFrame();
     if (!vf || !vf->data)
-        return nullptr;
+        return false;
     config.wallpaper.time = av_q2d(decoder->time_base) * vf->pts;
     auto dt = av_q2d(decoder->time_base) * vf->duration;
     frameTime += dt;
 
-    SkImageInfo info = SkImageInfo::Make(vf->width, vf->height, kRGBA_8888_SkColorType, kOpaque_SkAlphaType);
-    SkBitmap frameBitmap;
-    if (!frameBitmap.installPixels(info, vf->data, info.minRowBytes())) {
-        free(vf->data);
-        vf->data = nullptr;
-        return nullptr;
-    }
-
-    auto canvas = surface->getCanvas();
-    canvas->clear(SK_ColorCYAN);
-    canvas->drawImageRect(frameBitmap.asImage(), SkRect(0, 0, width, height), SkSamplingOptions());
-    surface->flush();
-
-    BITMAPINFO bi;
-    ZeroMemory(&bi, sizeof(bi));
-    bi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bi.bmiHeader.biWidth = width;
-    bi.bmiHeader.biHeight = -height;
-    bi.bmiHeader.biPlanes = 1;
-    bi.bmiHeader.biBitCount = 24;
-    bi.bmiHeader.biCompression = BI_RGB;
-
-    HBITMAP hBitmap = CreateDIBSection(hdc, &bi, DIB_RGB_COLORS, nullptr, nullptr, 0);
-    SelectObject(hdc, hBitmap);
-
-    auto pixels = SkImageGetBgr888Pixels(surface->makeImageSnapshot().get());
-
-    if (pixels) {
-        SetDIBits(hdc, hBitmap, 0, height, pixels, &bi, DIB_RGB_COLORS);
-        free(pixels);
-    }
-    DeleteObject(hBitmap);
-    free(vf->data);
-    vf->data = nullptr;
-    return vf;
+    return drawer.Draw(hdc, vf);
 }
 
 bool WallpaperWindow::decoderAvailable() {
@@ -418,12 +381,7 @@ bool WallpaperWindow::firstFrameLoaded() {
 void WallpaperWindow::SetSize(int width, int height) {
     this->width = width;
     this->height = height;
-
-    SkImageInfo info = SkImageInfo::Make(
-            width, height,
-            kRGBA_8888_SkColorType, kOpaque_SkAlphaType
-    );
-    surface = SkSurfaces::Raster(info);
+    drawer.SetSize(width, height);
 }
 
 bool WallpaperWindow::decoderPaused() {

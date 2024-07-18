@@ -9,6 +9,7 @@
 #include <include/core/SkSurface.h>
 
 #include "video-decoder.h"
+#include "drawer.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -33,12 +34,12 @@ private:
      */
     std::atomic<VideoDecoder *> decoderPtr = nullptr;
 
+    Drawer drawer;
+
     /**
      * 窗口宽高
      */
     int width = 0, height = 0;
-
-    sk_sp<SkSurface> surface;
 
 public:
 
@@ -95,7 +96,7 @@ public:
      *
      * @param hdc 绘图设备
      */
-    VideoFrame *paint(HDC hdc);
+    bool paint(HDC hdc);
 
     /**
      * 解码器可用
