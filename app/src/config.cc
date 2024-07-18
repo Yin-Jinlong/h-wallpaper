@@ -83,7 +83,21 @@ void initConfig() {
     if (!file_exists(configFile)) {
         file_create_empty(configFile);
     }
-    auto yaml = YAML::LoadFile(configFile);
+
+    std::ifstream in(configFile, std::ios::in, std::ios::binary);
+    if (!in.is_open()) {
+        return;
+    }
+    in.seekg(0, std::ios::end);
+    auto len = in.tellg();
+    in.seekg(0, std::ios::beg);
+    auto data = new char[len];
+    in.read(data, len);
+    in.close();
+
+    auto yaml = YAML::Load(u8str2string(reinterpret_cast<char8_t *>(data)));
+    delete[] data;
+
     auto wallpaper = getSubNodeOrNew(yaml, "wallpaper");
 
     setValue(&config.wallpaper.file, getSubNodeOrNew(wallpaper, "file"));
