@@ -117,7 +117,8 @@ namespace hww {
             dt = 1.0 / dm.dmDisplayFrequency;
         }
         wallpaperWindow->lastTime = toTime(now);
-        wallpaperWindow->nowTime += dt;
+        // 时间差过大，则按1s算
+        wallpaperWindow->nowTime += dt > 1 ? 1 : dt;
 
         HDC mdc = CreateCompatibleDC(hdc);
         if (wallpaperWindow->paint(mdc)) {
