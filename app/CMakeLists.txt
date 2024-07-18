@@ -56,6 +56,10 @@ add_executable(${PROJECT_NAME} WIN32
 )
 
 target_link_libraries(${PROJECT_NAME}
+        # win icu
+        icuuc
+        icuin
+
         # ffmpeg
         avcodec
         # avdevice

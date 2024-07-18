@@ -21,7 +21,7 @@
 static const WCHAR *HWallpaperWindowClassName = TEXT("YJL-WALLPAPER");
 
 extern std::string appPath;
-extern std::wstring exeWPath;
+extern str exeWPath;
 
 WallpaperWindow *wallpaperWindow;
 
@@ -50,7 +50,7 @@ namespace hww {
         wndClass.hIconSm = nullptr;
 
         if (!RegisterClassEx(&wndClass)) {
-            error("RegisterClassEx failed");
+            error(TEXT("RegisterClassEx failed"));
         }
     }
 
@@ -79,7 +79,7 @@ namespace hww {
                 sizeof(double),
                 HW_FM_VIDEO);
         if (hMapFile == nullptr) {
-            error("CreateFileMappingW failed");
+            error(TEXT("CreateFileMappingW failed"));
         }
     }
 
@@ -146,7 +146,7 @@ namespace hww {
                 return false;
             }
             error_message(err);
-            error("RegQueryValueEx failed");
+            error(TEXT("RegQueryValueEx failed"));
         }
         return exeWPath == value;
     }
@@ -155,7 +155,7 @@ namespace hww {
         HKEY runKey;
         DWORD err;
         if ((err = RegOpenKeyEx(HKEY_CURRENT_USER, REG_RUN_KEY, 0, KEY_ALL_ACCESS, &runKey))) {
-            error("RegOpenKeyEx failed");
+            error(TEXT("RegOpenKeyEx failed"));
             error_message(err);
         }
         if (run) {
@@ -163,14 +163,14 @@ namespace hww {
                                      (BYTE *) exeWPath.c_str(),
                                      static_cast<DWORD>(exeWPath.size() * sizeof(WCHAR))))) {
                 RegCloseKey(runKey);
-                error("RegSetValueEx failed");
+                error(TEXT("RegSetValueEx failed"));
                 error_message(err);
             }
         } else {
             if (regHasValue(runKey, nullptr, APP_NAME)) {
                 if ((err = RegDeleteValue(runKey, APP_NAME))) {
                     RegCloseKey(runKey);
-                    error("RegDeleteValue failed");
+                    error(TEXT("RegDeleteValue failed"));
                     error_message(err);
                 }
             }
@@ -242,7 +242,7 @@ namespace hww {
                     ofn.lpstrInitialDir = nullptr;
                     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
                     if (GetOpenFileName(&ofn)) {
-                        wallpaperWindow->SetVideo(wstring2string(ofn.lpstrFile));
+                        wallpaperWindow->SetVideo(str2u8str(ofn.lpstrFile));
                         InvalidateRect(hWnd, nullptr, FALSE);
                     }
                     break;
@@ -272,7 +272,7 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
                           nullptr);
 
     if (hWnd == nullptr) {
-        error("CreateWindowEx failed");
+        error(TEXT("CreateWindowEx failed"));
         error_message(GetLastError());
     }
 
@@ -301,7 +301,7 @@ void WallpaperWindow::SetToDesktop() {
     SetParent(hWnd, desktop);
 }
 
-void WallpaperWindow::SetVideo(const std::string &file, bool save, double seekTime) {
+void WallpaperWindow::SetVideo(const u8str &file, bool save, double seekTime) {
     if (file.empty())
         return;
     VideoDecoder *nd;
@@ -487,8 +487,10 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     FILE_MAP_READ, 0, 0, 0
             );
             if (pData) {
-                std::string file;
-                file += pData;
+                auto len = ((uint16_t *) pData)[0];
+                auto file = new char8_t[len + 1];
+                memcpy(file, pData + 2, len);
+                file[len] = '\0';
                 UnmapViewOfFile(pData);
                 wallpaperWindow->SetVideo(file);
             }

@@ -99,7 +99,7 @@ public:
      */
     AVRational time_base = {0};
 
-    explicit VideoDecoder(const std::string &file);
+    explicit VideoDecoder(u8str file);
 
     ~VideoDecoder();
 

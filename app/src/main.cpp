@@ -1,8 +1,6 @@
 #include <pre.h>
-#include <csignal>
 
 #include "wallpaper-window.h"
-#include "config.h"
 
 using namespace std;
 
@@ -10,8 +8,7 @@ HANDLE hMutex;
 
 string appPath;
 
-string exePath;
-wstring exeWPath;
+str exeWPath;
 
 void onexit() {
     CloseHandle(hMutex);
@@ -20,7 +17,7 @@ void onexit() {
 
 extern WallpaperWindow *wallpaperWindow;
 
-int sendVideoFile(const string &file) {
+int sendVideoFile(const str &file) {
     HWND hWnd = WallpaperWindow::FindExist();
     PostMessage(hWnd, WM_APP_VIDEO_FILE, 0, 0);
     HANDLE hMapFile;
@@ -30,7 +27,7 @@ int sendVideoFile(const string &file) {
     hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, HW_FM_VIDEO);
     if (!hMapFile) {
         auto err = GetLastError();
-        error_not_throw(format("OpenFileMapping failed with error code {}", err));
+        error_not_throw(format(TEXT("OpenFileMapping failed with error code {}"), err));
         return err;
     }
 
@@ -38,11 +35,14 @@ int sendVideoFile(const string &file) {
     pData = (char *) MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     if (!pData) {
         auto err = GetLastError();
-        error_not_throw(format("MapViewOfFile failed with error code {}", err));
+        error_not_throw(format(TEXT("MapViewOfFile failed with error code {}"), err));
         return err;
     }
 
-    strcpy_s(pData, file.length() + 1, file.c_str());
+    auto u8String = str2u8str(file);
+    auto len = strlen(reinterpret_cast<const char *>(u8String.c_str()));
+    memcpy(pData, &len, 2);
+    memcpy(pData + 2, u8String.c_str(), len);
 
     UnmapViewOfFile(pData);
     CloseHandle(hMapFile);
@@ -54,14 +54,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     int argc = 0;
     LPWSTR *args = CommandLineToArgvW(GetCommandLineW(), &argc);
     exeWPath = args[0];
-    exePath = wstring2string(args[0]);
-    appPath = wstring2string(args[0]);
+    appPath = str2string(args[0]);
     appPath = appPath.substr(0, appPath.find_last_of("\\/"));
 
     hMutex = CreateMutex(nullptr, FALSE, APP_NAME);
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         if (argc > 1)
-            return sendVideoFile(wstring2string(args[1]));
+            return sendVideoFile(args[1]);
         MessageBox(nullptr, TEXT("H-Wallpaper is already running."), TEXT("Error"), MB_OK | MB_ICONERROR);
         return ERROR_ALREADY_EXISTS;
     }
@@ -74,7 +73,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     wallpaperWindow->Show();
 
     if (argc > 1)
-        wallpaperWindow->SetVideo(wstring2string(args[1]));
+        wallpaperWindow->SetVideo(str2u8str(args[1]));
     else if (!config.wallpaper.file.empty()) {
         wallpaperWindow->SetVideo(config.wallpaper.file, false, config.wallpaper.time);
     }

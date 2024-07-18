@@ -14,10 +14,10 @@ bool file_create_empty(const std::string &name) {
     return false;
 }
 
-bool file_write(const std::string name, std::string content) {
+bool file_write(const std::string &name, void *content, size_t size) {
     std::ofstream file(name, std::ios::out);
     if (file.is_open()) {
-        file << content;
+        file.write((char *) content, size);
         file.close();
         return true;
     }

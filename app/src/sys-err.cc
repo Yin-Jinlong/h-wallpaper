@@ -1,8 +1,8 @@
 #include "sys-err.h"
 
-std::string get_error_message(DWORD code) {
-    CHAR *buffer = new CHAR[4096];
-    if (!FormatMessageA(
+str get_error_message(DWORD code) {
+    auto *buffer = new WCHAR[4096];
+    if (!FormatMessage(
             FORMAT_MESSAGE_FROM_SYSTEM,
             nullptr,
             code,
@@ -11,8 +11,8 @@ std::string get_error_message(DWORD code) {
             4096,
             nullptr
     ))
-        return "";
-    std::string r = buffer;
+        return TEXT("");
+    str r = buffer;
     delete[] buffer;
     return r;
 }
@@ -21,5 +21,5 @@ void error_message(DWORD code) {
     if (!code)
         return;
     auto msg = get_error_message(code);
-    error_not_throw(msg.empty() ? "未知错误" : msg);
+    error_not_throw(msg.empty() ? TEXT("未知错误") : msg);
 }

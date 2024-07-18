@@ -1,22 +1,5 @@
 #include <image-util.h>
 
-bool SkBitmapSetRgb888Pixels(SkBitmap *bitmap, size_t width, size_t height, RGBColor *pixels, byte alpha) {
-    if (!bitmap)
-        return false;
-    if (bitmap->colorType() != kRGBA_8888_SkColorType)
-        error("SkBitmapSetRgb888Pixels: color type must be kRGBA_8888_SkColorType");
-
-    auto pixmap = bitmap->pixmap();
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            uint32_t *pixel = pixmap.writable_addr32(x, y);
-            auto rgb = pixels[y * width + x];
-            *pixel = 255 << 24 | 255 << 16 | 0 << 8 | alpha;
-        }
-    }
-    return true;
-}
-
 RGBColor *SkImageGetRgb888Pixels(SkImage *image) {
     SkPixmap pixmap;
     if (!image || !image->peekPixels(&pixmap) || image->colorType() != kRGBA_8888_SkColorType)

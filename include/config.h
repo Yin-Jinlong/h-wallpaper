@@ -14,7 +14,7 @@ enum class ContentFit {
 
 struct HWallpaperConfig {
     struct {
-        std::string file;
+        std::u8string file;
         ContentFit fit;
         double time;
     } wallpaper;

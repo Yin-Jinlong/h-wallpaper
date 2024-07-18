@@ -46,6 +46,22 @@ struct YAML::convert<ContentFit> {
     }
 };
 
+template<>
+struct YAML::convert<u8str> {
+    static YAML::Node encode(const u8str &rhs) {
+        return YAML::Node(u8str2string(rhs));
+    }
+
+    static bool decode(const YAML::Node &node, u8str &rhs) {
+        if (node.IsScalar()) {
+            const std::string &value = node.Scalar();
+            rhs = string2u8string(value);
+            return true;
+        }
+        return false;
+    }
+};
+
 template<typename T>
 bool setValue(T *configPtr, const YAML::Node &key) {
     try {
@@ -81,5 +97,7 @@ bool SaveConfig() {
     wallpaper["file"] = config.wallpaper.file;
     wallpaper["fit"] = config.wallpaper.fit;
     wallpaper["time"] = config.wallpaper.time;
-    return file_write(configFile, YAML::Dump(yaml));
+    auto dump = string2u8string(YAML::Dump(yaml));
+    auto size = strlen(reinterpret_cast<char *>(dump.data()));
+    return file_write(configFile, dump.data(), size);
 }

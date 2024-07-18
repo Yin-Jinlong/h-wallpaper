@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <exception>
 #include <commctrl.h>
+#include <icu.h>
 
 #include "str-utils.h"
 
@@ -29,16 +30,13 @@
 
 #define GET_CSTR(id) GetStr(id).c_str()
 
-/**
- * @brief 显示错误并抛出异常
- * @param msg 消息
- *
- * @author YJL
- */
-inline void error(LPCSTR msg) {
-    MessageBoxExA(nullptr, msg, "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
-    throw std::runtime_error(msg);
-}
+#ifdef UNICODE
+typedef std::wstring str;
+#else
+typedef std::string str;
+#endif
+
+typedef std::u8string u8str;
 
 /**
  * @brief 显示错误并抛出异常
@@ -46,9 +44,9 @@ inline void error(LPCSTR msg) {
  *
  * @author YJL
  */
-inline void error(const std::string &msg) {
-    MessageBoxExA(nullptr, msg.c_str(), "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
-    throw std::runtime_error(msg);
+inline void error(const str &msg) {
+    MessageBoxEx(nullptr, msg.c_str(), TEXT("Error"), MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
+    throw std::runtime_error(str2string(msg));
 }
 
 /**
@@ -57,8 +55,8 @@ inline void error(const std::string &msg) {
  *
  * @author YJL
  */
-inline void error_not_throw(LPCSTR msg) {
-    MessageBoxExA(nullptr, msg, "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
+inline void error_not_throw(LPCWSTR msg) {
+    MessageBoxEx(nullptr, msg, TEXT("Error"), MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
 }
 
 /**
@@ -67,6 +65,6 @@ inline void error_not_throw(LPCSTR msg) {
  *
  * @author YJL
  */
-inline void error_not_throw(const std::string &msg) {
-    MessageBoxExA(nullptr, msg.c_str(), "Error", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
+inline void error_not_throw(const std::wstring &msg) {
+    MessageBoxEx(nullptr, msg.c_str(), TEXT("Error"), MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY, 0);
 }

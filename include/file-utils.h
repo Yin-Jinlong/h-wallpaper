@@ -25,11 +25,12 @@ bool file_create_empty(const std::string &name);
  * @brief 写文件
  * @param name 文件名
  * @param content 文本内容
+ * @param size 内容大小
  * @return 是否写入成功
  *
  * @author YJL
  */
-bool file_write(const std::string name, std::string content);
+bool file_write(const std::string &name, void *content, size_t size);
 
 /**
  * @brief 删除文件

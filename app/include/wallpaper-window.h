@@ -82,7 +82,7 @@ public:
      *
      * @param file 视频文件
      */
-    void SetVideo(const std::string &file, bool save = true, double seekTime = 0.0);
+    void SetVideo(const u8str &file, bool save = true, double seekTime = 0.0);
 
     /**
      * @brief 跳转到指定帧
