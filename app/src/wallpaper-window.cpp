@@ -220,6 +220,7 @@ namespace hww {
     void onMenuClick(HWND hWnd, int id) {
         if (id >= FIT_MENU_ID_START) {
             config.wallpaper.fit = static_cast<ContentFit>(id - FIT_MENU_ID_START);
+            SaveConfig();
         } else {
             switch (id) {
                 case PMID_EXIT:
@@ -474,7 +475,14 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             CloseHandle(hMapFile);
             Shell_NotifyIcon(NIM_DELETE, &nid);
             break;
-        case WM_APP_QUERY_MAXIMIZED:
+        case WM_APP_QUERY_MAXIMIZED: {
+            static double lastSaveTime = 0;
+            // 每5s播放保存一次配置
+            // 以免在意外结束进程后丢失播放进度
+            if (wallpaperWindow->nowTime - lastSaveTime > 5) {
+                SaveConfig();
+                lastSaveTime = wallpaperWindow->nowTime;
+            }
             if (HasWindowMaximized()) {
                 if (!wallpaperWindow->decoderPaused())
                     wallpaperWindow->pause();
@@ -482,6 +490,7 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 wallpaperWindow->resume();
             }
             break;
+        }
         case WM_APP_VIDEO_FILE: {
             char *pData = (char *) MapViewOfFile(
                     hMapFile,
