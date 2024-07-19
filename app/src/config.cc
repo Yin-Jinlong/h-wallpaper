@@ -20,6 +20,8 @@ struct YAML::convert<ContentFit> {
                 return YAML::Node("center");
             case ContentFit::REPEAT:
                 return YAML::Node("repeat");
+            case ContentFit::PIP:
+                return YAML::Node("pip");
             default:
                 return YAML::Node("clip");
         }
@@ -38,6 +40,8 @@ struct YAML::convert<ContentFit> {
                 rhs = ContentFit::CENTER;
             else if (value == "repeat")
                 rhs = ContentFit::REPEAT;
+            else if (value == "pip")
+                rhs = ContentFit::PIP;
             else
                 rhs = ContentFit::CLIP;
             return true;

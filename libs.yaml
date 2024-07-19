@@ -14,8 +14,8 @@ libs:
         - "ffmpeg-n7.0-latest-win64-lgpl-shared-7.0/include/"
   skia:
     type: zip
-    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/v0.38.2/skia-v0.38.2-default-release-win-x64.zip
-    download-name: skia-v0.38.2-default-release-win-x64.zip
+    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/v2024.07.19-m115/skia-v2024.07.19-m115-default-shared-release.zip
+    download-name: skia-v2024.07.19-m115-default-shared-release.zip
     libs:
       libs/skia/:
         - "/"

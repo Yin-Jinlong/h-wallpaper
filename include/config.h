@@ -10,6 +10,10 @@ enum class ContentFit {
     STRETCH,
     CENTER,
     REPEAT,
+    /**
+     * 画中画
+     */
+    PIP,
 };
 
 struct HWallpaperConfig {

@@ -11,6 +11,9 @@ Drawer::Drawer() {
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biBitCount = 24;
     bmi.bmiHeader.biCompression = BI_RGB;
+
+    pipFilter = SkImageFilters::Blur(10, 10, nullptr);
+    pipPaint.setImageFilter(pipFilter);
 }
 
 
@@ -46,7 +49,7 @@ bool Drawer::Draw(HDC hdc, VideoFrame *frame) {
     return true;
 }
 
-void Drawer::DrawImage(SkImage *image, ContentFit fit) {
+void Drawer::DrawImage(SkImage *image, ContentFit fit, SkPaint *paint) {
 
     auto imgW = (float) image->width();
     auto imgH = (float) image->height();
@@ -106,18 +109,23 @@ void Drawer::DrawImage(SkImage *image, ContentFit fit) {
             for (int i = 0; i < countY; ++i) {
                 endX = 0;
                 for (int j = 0; j < countX; ++j) {
-                    canvas->drawImage(image, endX, endY);
+                    canvas->drawImage(image, endX, endY, SkSamplingOptions(), paint);
                     endX += imgW;
                 }
                 endY += imgH;
             }
             break;
         }
+        case ContentFit::PIP: {
+            DrawImage(image, ContentFit::CLIP, &pipPaint);
+            DrawImage(image, ContentFit::CONTAIN);
+            break;
+        }
         default:
             return;
     }
 
-    canvas->drawImageRect(image, dst, SkSamplingOptions());
+    canvas->drawImageRect(image, dst, SkSamplingOptions(), paint);
 }
 
 void Drawer::SetSize(int width, int height) {

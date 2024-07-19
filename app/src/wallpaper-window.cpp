@@ -205,6 +205,7 @@ namespace hww {
         AppendMenu(trayFitMenu, FIT_MENU_ITEM(STRETCH), GET_CSTR(IDS_FIT_MENU_STRETCH));
         AppendMenu(trayFitMenu, FIT_MENU_ITEM(CENTER), GET_CSTR(IDS_FIT_MENU_CENTER));
         AppendMenu(trayFitMenu, FIT_MENU_ITEM(REPEAT), GET_CSTR(IDS_FIT_MENU_REPEAT));
+        AppendMenu(trayFitMenu, FIT_MENU_ITEM(PIP), GET_CSTR(IDS_FIT_MENU_PIP));
 
         AppendMenu(trayMenu,
                    isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
@@ -465,6 +466,7 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(STRETCH));
                 CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CENTER));
                 CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(REPEAT));
+                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(PIP));
                 int id = TrackPopupMenuEx(trayMenu, TPM_RETURNCMD, pt.x, pt.y, hWnd, nullptr);
                 onMenuClick(hWnd, id);
             }

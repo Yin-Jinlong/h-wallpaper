@@ -7,6 +7,7 @@
 #include <include/core/SkColor.h>
 #include <include/core/SkPaint.h>
 #include <include/core/SkSurface.h>
+#include <include/effects/SkImageFilters.h>
 
 #include "video-decoder.h"
 #include "config.h"
@@ -17,7 +18,8 @@ private:
 
     SkCanvas *canvas = nullptr;
 
-    SkPaint paint;
+    sk_sp<SkImageFilter> pipFilter;
+    SkPaint pipPaint;
 
     BITMAPINFO bmi{0};
 
@@ -37,7 +39,7 @@ public:
      */
     bool Draw(HDC hdc, VideoFrame *frame);
 
-    void DrawImage(SkImage *image, ContentFit fit);
+    void DrawImage(SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
 
     void SetSize(int width, int height);
 };
