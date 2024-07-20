@@ -5,7 +5,6 @@ project(h-wallpaper)
 ########
 
 set(CMAKE_CXX_STANDARD 23)
-set(YAML_BUILD_SHARED_LIBS ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
 
@@ -55,6 +54,23 @@ add_executable(${PROJECT_NAME} WIN32
         ${SRCS}
 )
 
+if (${DEBUG})
+    set(SKIA_LIB_NAMES
+            skia.dll.lib
+    )
+    set(SKIA_DLLS
+            "${SKIA_BIN_DIR}/skia.dll"
+    )
+else ()
+    set_property(TARGET ${PROJECT_NAME} PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set(SKIA_LIB_NAMES
+            skia
+            opengl32
+    )
+    set(SKIA_DLLS)
+endif ()
+
 target_link_libraries(${PROJECT_NAME}
         # win icu
         icuuc
@@ -70,7 +86,7 @@ target_link_libraries(${PROJECT_NAME}
         swscale
 
         # skia
-        skia.dll.lib
+        ${SKIA_LIB_NAMES}
 
         # yaml-cp
         ${YAML_CPP_LIBS}
@@ -89,7 +105,7 @@ file(GLOB DLLS
         "${FFMPEG_BIN_DIR}/swresample-5.dll"
         "${FFMPEG_BIN_DIR}/swscale-8.dll"
         # skia
-        "${SKIA_BIN_DIR}/skia.dll"
+        ${SKIA_DLLS}
         # yaml-cpp
         "${YAML_CPP_BIN_DIR}/*.dll"
 )

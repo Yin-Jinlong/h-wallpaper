@@ -19,6 +19,12 @@ set(APP_NAME h-wallpaper)
 set(APP_VERSION "1.0")
 set(APP_DIR_NAME "${APP_NAME} ${APP_VERSION}")
 
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    set(DEBUG ON)
+else ()
+    set(DEBUG OFF)
+endif ()
+
 # 子项目
 
 add_subdirectory(app)

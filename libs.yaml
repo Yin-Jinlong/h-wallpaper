@@ -3,21 +3,28 @@ version: 1.0
 libs:
   ffmpeg:
     type: zip
-    url: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.0-latest-win64-lgpl-shared-7.0.zip
-    download-name: ffmpeg-n7.0-latest-win64-lgpl-shared-7.0.zip
+    url: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-07-19-12-54/ffmpeg-n7.0.1-32-gdb90c46fff-win64-lgpl-shared-7.0.zip
+    download-name: ffmpeg-n7.0.1-32-gdb90c46fff-win64-lgpl-shared-7.0.zip
     libs:
       libs/ffmpeg/bin/:
         - ".*\.dll$"
       libs/ffmpeg/lib/:
-        - "ffmpeg-n7.0-latest-win64-lgpl-shared-7.0/lib/.*\.lib"
+        - "ffmpeg-n7.0.1-32-gdb90c46fff-win64-lgpl-shared-7.0/lib/.*\.lib"
       libs/ffmpeg/include/:
-        - "ffmpeg-n7.0-latest-win64-lgpl-shared-7.0/include/"
+        - "ffmpeg-n7.0.1-32-gdb90c46fff-win64-lgpl-shared-7.0/include/"
   skia:
     type: zip
-    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/v2024.07.19-m115/skia-v2024.07.19-m115-default-shared-release.zip
-    download-name: skia-v2024.07.19-m115-default-shared-release.zip
+    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/vm115/skia-m115-default-shared-release.zip
+    download-name: skia-m115-default-shared-release.zip
     libs:
       libs/skia/:
+        - "/"
+  skia-static:
+    type: zip
+    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/vm115/skia-m115-default-static-release.zip
+    download-name: skia-m115-default-static-release.zip
+    libs:
+      libs/skia-static/:
         - "/"
   yaml-cpp:
     type: git

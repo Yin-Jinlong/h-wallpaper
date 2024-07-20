@@ -58,8 +58,6 @@ export async function extract(name: string, lib: ZipLib) {
 
         for (const relativePath in zip.files) {
             let file = zip.files[relativePath]
-            if (file.dir)
-                continue
             let dst = ''
             for (const pattern of patternMap.keys()) {
                 if (typeof pattern === 'string') {
@@ -78,6 +76,10 @@ export async function extract(name: string, lib: ZipLib) {
 
             if (!dst)
                 continue
+            if (file.dir) {
+                fs.mkdirSync(path.resolve(dst, file.name), {recursive: true})
+                continue
+            }
 
             if (!fs.existsSync(dst))
                 fs.mkdirSync(dst, {recursive: true})
