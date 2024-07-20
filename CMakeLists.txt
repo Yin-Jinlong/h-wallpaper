@@ -6,6 +6,7 @@ project(h-wallpaper-win)
 ########
 
 include(cmake/libs.cmake)
+include(cmake/licenses.cmake)
 include(cmake/msvc.cmake)
 
 ########
@@ -13,6 +14,7 @@ include(cmake/msvc.cmake)
 ########
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(DOWNLOADS_DIR ${CMAKE_SOURCE_DIR}/downloads)
 set(LIBS_DIR ${CMAKE_SOURCE_DIR}/libs)
 set(OUT_DIR ${CMAKE_BINARY_DIR}/out)
 set(APP_NAME h-wallpaper)

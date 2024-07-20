@@ -123,3 +123,27 @@ endforeach ()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES ${DLLS} DESTINATION .)
+
+########
+# 协议 #
+########
+
+install(FILES
+        ${CMAKE_SOURCE_DIR}/LICENSE.md
+        DESTINATION .
+)
+
+# ffmpeg
+install_licenses(ffmpeg
+        "${FFMPEG_HOME}/LICENSE.txt"
+)
+
+# skia
+install_licenses(skia
+        ${SKIA_HOME}/LICENSE
+)
+
+# yamp-cpp
+install_licenses(yaml-cpp
+        ${YAML_CPP_SRC_DIR}/LICENSE
+)

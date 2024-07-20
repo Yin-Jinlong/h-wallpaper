@@ -6,6 +6,8 @@ libs:
     url: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-07-19-12-54/ffmpeg-n7.0.1-32-gdb90c46fff-win64-lgpl-shared-7.0.zip
     download-name: ffmpeg-n7.0.1-32-gdb90c46fff-win64-lgpl-shared-7.0.zip
     libs:
+      libs/ffmpeg/:
+        - "LICENSE.*"
       libs/ffmpeg/bin/:
         - ".*\.dll$"
       libs/ffmpeg/lib/:
