@@ -57,7 +57,7 @@ void Drawer::DrawImage(SkImage *image, ContentFit fit, SkPaint *paint) {
     float sw = width / imgW;
     float sh = height / imgH;
 
-    SkRect dst;
+    SkRect dst(0, 0, 0, 0);
     switch (fit) {
         case ContentFit::CLIP: {
             if (imgRate > rate) {
