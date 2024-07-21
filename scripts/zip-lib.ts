@@ -42,6 +42,7 @@ export async function extract(name: string, lib: ZipLib) {
     return new Promise(async resolve => {
 
         console.log(`${pc.cyan('Extracting')} ${name}...`)
+        oraP.start()
         let patternMap = new Map<RegExp | string, string>()
         for (let dst in lib.libs) {
             for (let pattern of lib.libs[dst]) {
@@ -58,16 +59,19 @@ export async function extract(name: string, lib: ZipLib) {
 
         for (const relativePath in zip.files) {
             let file = zip.files[relativePath]
+            if (!file.name.startsWith(lib.prefix ?? ''))
+                continue
+            let fname = file.name.substring(lib.prefix?.length ?? 0)
             let dst = ''
             for (const pattern of patternMap.keys()) {
                 if (typeof pattern === 'string') {
-                    if (relativePath.startsWith(pattern)) {
-                        dst = patternMap.get(pattern)! + file.name.substring(pattern.length)
+                    if (fname.startsWith(pattern)) {
+                        dst = patternMap.get(pattern)! + fname.substring(pattern.length)
                         dst = path.dirname(dst)
                         break
                     }
                 } else {
-                    if (pattern.test(relativePath)) {
+                    if (pattern.test(fname)) {
                         dst = patternMap.get(pattern)!
                         break
                     }
@@ -77,7 +81,7 @@ export async function extract(name: string, lib: ZipLib) {
             if (!dst)
                 continue
             if (file.dir) {
-                fs.mkdirSync(path.resolve(dst, file.name), {recursive: true})
+                fs.mkdirSync(path.resolve(dst, fname), {recursive: true})
                 continue
             }
 
@@ -85,7 +89,7 @@ export async function extract(name: string, lib: ZipLib) {
                 fs.mkdirSync(dst, {recursive: true})
 
             let data = await file.async('uint8array')
-            let name = path.basename(file.name)
+            let name = path.basename(fname)
             let dstFile = path.resolve(dst, name)
             if (fs.existsSync(dstFile)) {
                 oraP.info(`${pc.yellow('skip')} ${name}`)

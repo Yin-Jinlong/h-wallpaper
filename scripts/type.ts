@@ -26,6 +26,10 @@ declare interface ZipLib extends Lib {
      * 下载文件名
      */
     'download-name': string
+    /**
+     * 只有带此前缀的目录会被创建，复制文件时会匹配到前缀。创建和复制时都会移除前缀进行
+     */
+    prefix: string
     libs: LibMap
 }
 

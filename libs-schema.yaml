@@ -52,6 +52,8 @@ definitions:
           - zip
       download-name:
         type: string
+      prefix:
+        type: string
       libs:
         type: object
         additionalProperties: true
