@@ -34,12 +34,22 @@ str latestVersion() {
     return info.tag_name.substr(1);
 }
 
-int main() {
-    auto data = file_read("VERSION");
+int main(int argc, char *argv[]) {
+    bool onlyNew = false;
+    if (argc > 1) {
+        str option = string2str(argv[1]);
+        if (option == TEXT("--only-new")) {
+            onlyNew = true;
+        }
+    }
+
+    size_t len;
+    auto data = file_read("VERSION", len);
     if (!data) {
         return 1;
     }
-    u8str text = u8str((char8_t *) data);
+    u8str text = u8str(data, data + len);
+
     free(data);
 
     if (text.empty()) {
@@ -47,8 +57,15 @@ int main() {
     }
 
     auto version = latestVersion();
-    if (version.empty())
+    if (version.empty()) {
+        if (!onlyNew) {
+            MessageBox(nullptr,
+                       TEXT("无法获取最新版本"),
+                       APP_NAME,
+                       MB_OK);
+        }
         return 404;
+    }
 
     auto nowVersion = u8str2str(text);
     if (version > nowVersion) {
@@ -65,6 +82,11 @@ int main() {
                     nullptr,
                     SW_SHOW);
         }
+    } else if (!onlyNew) {
+        MessageBox(nullptr,
+                   std::format(TEXT("当前版本：{}\n已是最新版本"), nowVersion).c_str(),
+                   APP_NAME,
+                   MB_OK);
     }
     return 0;
 }

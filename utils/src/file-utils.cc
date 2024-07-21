@@ -14,7 +14,7 @@ bool file_create_empty(const std::string &name) {
     return false;
 }
 
-BYTE *file_read(const std::string &name) {
+BYTE *file_read(const std::string &name, size_t &len) {
     if (!file_exists(name))
         return nullptr;
     std::ifstream in(name, std::ios::in | std::ios::binary);
@@ -22,9 +22,10 @@ BYTE *file_read(const std::string &name) {
         in.seekg(0, std::ios::end);
         size_t size = in.tellg();
         in.seekg(0, std::ios::beg);
-        BYTE *buffer = new BYTE[size];
+        BYTE *buffer = (BYTE *) malloc(size);
         in.read((char *) buffer, size);
         in.close();
+        len = size;
         return buffer;
     }
     return nullptr;

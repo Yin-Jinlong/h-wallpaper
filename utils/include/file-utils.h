@@ -24,9 +24,10 @@ HWPP_API bool file_create_empty(const std::string &name);
 /**
  * @brief 读取文件
  * @param name 文件名
+ * @param[out] len 文件大小
  * @return 文件内容或空（文件不存在或出现读取错误）
  */
-HWPP_API BYTE *file_read(const std::string &name);
+HWPP_API BYTE *file_read(const std::string &name, size_t &len);
 
 /**
  * @brief 写文件
