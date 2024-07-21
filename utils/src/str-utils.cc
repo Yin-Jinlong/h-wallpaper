@@ -1,6 +1,6 @@
-#pragma once
-
-#include <pre.h>
+#include <str-utils.h>
+#include <windows.h>
+#include <icu.h>
 
 /**
  * wstring 转 string
@@ -9,18 +9,18 @@
  *
  * @author YJL
  */
-inline std::string str2string(const std::wstring wstr) {
+std::string str2string(const str &str) {
     std::string result;
-    int len = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), wstr.size(), NULL, 0, NULL, NULL);
+    int len = WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), NULL, 0, NULL, NULL);
     char *buffer = new char[len + 1];
-    WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), wstr.size(), buffer, len, NULL, NULL);
+    WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.size(), buffer, len, NULL, NULL);
     buffer[len] = '\0';
     result.append(buffer);
     delete[] buffer;
     return result;
 }
 
-inline std::wstring string2str(const std::string &str) {
+str string2str(const std::string &str) {
     std::wstring result;
     int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), NULL, 0);
     auto *buffer = new wchar_t[len + 1];
@@ -32,7 +32,7 @@ inline std::wstring string2str(const std::string &str) {
 }
 
 
-inline std::u8string str2u8str(const std::wstring &str) {
+u8str str2u8str(const str &str) {
     auto src = reinterpret_cast<const char16_t *>(str.c_str());
     int32_t len = str.size() * 4;
     UErrorCode err = U_ZERO_ERROR;
@@ -44,7 +44,7 @@ inline std::u8string str2u8str(const std::wstring &str) {
     return r;
 }
 
-inline std::wstring u8str2str(const std::u8string &str) {
+str u8str2str(const u8str &str) {
     auto src = reinterpret_cast<const char *>(str.c_str());
     int32_t len = str.size() * 2;
     UErrorCode err = U_ZERO_ERROR;
@@ -56,11 +56,11 @@ inline std::wstring u8str2str(const std::u8string &str) {
     return r;
 }
 
-inline std::string u8str2string(const std::u8string &str) {
+std::string u8str2string(const u8str &str) {
     return str2string(u8str2str(str));
 }
 
 
-inline std::u8string string2u8string(const std::string &str) {
+u8str string2u8string(const std::string &str) {
     return str2u8str(string2str(str));
 }

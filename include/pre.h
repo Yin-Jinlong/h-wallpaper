@@ -9,7 +9,7 @@
 #include <commctrl.h>
 #include <icu.h>
 
-#include "str-utils.h"
+// windows 宏 与部分c++用法冲突
 
 #ifdef min
 #undef min
@@ -21,22 +21,24 @@
 #define Max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+// 声明
+
+// 常值
+
 #define MAX_FRAMES 2
 
 #define HW_FM_VIDEO L"h-wallpaper-video"
+
+// 替换
 
 #define WM_APP_VIDEO_FILE (WM_APP+1)
 #define WM_APP_QUERY_MAXIMIZED (WM_APP+2)
 
 #define GET_CSTR(id) GetStr(id).c_str()
 
-#ifdef UNICODE
-typedef std::wstring str;
-#else
-typedef std::string str;
-#endif
 
-typedef std::u8string u8str;
+#include <def.h>
+#include "str-utils.h"
 
 /**
  * @brief 显示错误并抛出异常

@@ -27,7 +27,6 @@ find_package(yaml-cpp)
 #########
 
 include_directories(
-        "../include"
         "include"
 )
 
@@ -66,9 +65,7 @@ else ()
 endif ()
 
 target_link_libraries(${PROJECT_NAME}
-        # win icu
-        icuuc
-        icuin
+        $<TARGET_LINKER_FILE:utils>
 
         # ffmpeg
         avcodec

@@ -10,7 +10,7 @@
  *
  * @author YJL
  */
-bool file_exists(const std::string &name);
+HWPP_API bool file_exists(const std::string &name);
 
 /**
  * @brief 创建空文件
@@ -19,7 +19,7 @@ bool file_exists(const std::string &name);
  *
  * @author YJL
  */
-bool file_create_empty(const std::string &name);
+HWPP_API bool file_create_empty(const std::string &name);
 
 /**
  * @brief 写文件
@@ -30,7 +30,7 @@ bool file_create_empty(const std::string &name);
  *
  * @author YJL
  */
-bool file_write(const std::string &name, void *content, size_t size);
+HWPP_API bool file_write(const std::string &name, void *content, size_t size);
 
 /**
  * @brief 删除文件
@@ -39,4 +39,4 @@ bool file_write(const std::string &name, void *content, size_t size);
  *
  * @author YJL
  */
-bool file_delete(const std::string &name);
+HWPP_API bool file_delete(const std::string &name);

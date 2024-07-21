@@ -49,10 +49,18 @@ add_definitions(
         -DBUILD_DATE="${BUILD_DATE}"
 )
 
+# 公共引入
+
+include_directories(
+        "include"
+        "utils/include"
+)
+
 # 子项目
 
 add_subdirectory(app)
 #add_subdirectory(ui)
+add_subdirectory(utils)
 
 # 安装
 
