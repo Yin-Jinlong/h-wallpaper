@@ -1,7 +1,7 @@
 #pragma once
 
-#cmakedefine APP_NAME "@APP_NAME@"
-#cmakedefine APP_VERSION "@APP_VERSION@"
+#cmakedefine APP_NAME L"@APP_NAME@"
+#cmakedefine APP_VERSION L"@APP_VERSION@"
 #cmakedefine VERSION_MAJOR @VERSION_MAJOR@
 #cmakedefine VERSION_MINOR @VERSION_MINOR@
 #cmakedefine VERSION_PATCH @VERSION_PATCH@
