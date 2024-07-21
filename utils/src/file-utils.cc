@@ -14,6 +14,22 @@ bool file_create_empty(const std::string &name) {
     return false;
 }
 
+BYTE *file_read(const std::string &name) {
+    if (!file_exists(name))
+        return nullptr;
+    std::ifstream in(name, std::ios::in | std::ios::binary);
+    if (in.is_open()) {
+        in.seekg(0, std::ios::end);
+        size_t size = in.tellg();
+        in.seekg(0, std::ios::beg);
+        BYTE *buffer = new BYTE[size];
+        in.read((char *) buffer, size);
+        in.close();
+        return buffer;
+    }
+    return nullptr;
+}
+
 bool file_write(const std::string &name, void *content, size_t size) {
     std::ofstream file(name, std::ios::out);
     if (file.is_open()) {
