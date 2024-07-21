@@ -27,7 +27,7 @@ set(PROJECT_VERSION_TWEAK ${BUILD_DATE})
 set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-${PROJECT_VERSION_TWEAK})
 
 set(APP_NAME h-wallpaper)
-set(APP_VERSION "\"${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}\"")
+set(APP_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 set(APP_DIR_NAME "${APP_NAME} ${APP_VERSION}")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
@@ -45,7 +45,7 @@ add_definitions(
         -DVERSION_MINOR=${PROJECT_VERSION_MINOR}
         -DVERSION_PATCH=${PROJECT_VERSION_PATCH}
         -DVERSION_TWEAK=${PROJECT_VERSION_TWEAK}
-        -DAPP_VERSION=${APP_VERSION}
+        -DAPP_VERSION="${APP_VERSION}"
         -DBUILD_DATE="${BUILD_DATE}"
 )
 
@@ -56,10 +56,18 @@ include_directories(
         "utils/include"
 )
 
+# 外部库
+
+find_package(ffmpeg)
+find_package(skia)
+find_package(yaml-cpp)
+
+
 # 子项目
 
 add_subdirectory(app)
 #add_subdirectory(ui)
+add_subdirectory(updater)
 add_subdirectory(utils)
 
 # 安装
@@ -68,4 +76,29 @@ set(CMAKE_INSTALL_PREFIX ${APP_DIR_NAME})
 install(FILES
         ${PROJECT_BINARY_DIR}/VERSION
         DESTINATION .
+)
+
+
+########
+# 协议 #
+########
+
+install(FILES
+        ${CMAKE_SOURCE_DIR}/LICENSE.md
+        DESTINATION .
+)
+
+# ffmpeg
+install_licenses(ffmpeg
+        "${FFMPEG_HOME}/LICENSE.txt"
+)
+
+# skia
+install_licenses(skia
+        ${SKIA_HOME}/LICENSE
+)
+
+# yamp-cpp
+install_licenses(yaml-cpp
+        ${YAML_CPP_SRC_DIR}/LICENSE
 )
