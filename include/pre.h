@@ -1,5 +1,7 @@
 #pragma once
 
+#include <pre-config.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <string>
