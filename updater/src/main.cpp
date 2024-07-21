@@ -52,7 +52,10 @@ int main() {
 
     auto nowVersion = u8str2str(text);
     if (version > nowVersion) {
-        auto btn = MessageBox(nullptr, TEXT("发现新版本，立即更新？"), TEXT(APP_NAME), MB_YESNOCANCEL);
+        auto btn = MessageBox(nullptr,
+                              std::format(TEXT("发现新版本：{}\n当前：{}\n立即更新？"), version, nowVersion).c_str(),
+                              APP_NAME,
+                              MB_YESNOCANCEL);
         if (btn == IDYES) {
             ShellExecute(
                     nullptr,
