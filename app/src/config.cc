@@ -79,7 +79,10 @@ bool setValue(T *configPtr, const YAML::Node &key) {
 }
 
 YAML::Node getSubNodeOrNew(const YAML::Node &node, const std::string &key) {
-    return node.IsMap() ? node[key] : YAML::Node();
+    if (node.IsDefined()) {
+        return node.IsMap() ? node[key] : YAML::Node();
+    }
+    return YAML::Node();
 }
 
 void initConfig() {
@@ -102,6 +105,9 @@ void initConfig() {
     auto yaml = YAML::Load(u8str2string(reinterpret_cast<char8_t *>(data)));
     delete[] data;
 
+    auto update = getSubNodeOrNew(yaml, "update");
+    setValue(&config.update.checkOnStart, getSubNodeOrNew(update, "checkOnStart"));
+
     auto wallpaper = getSubNodeOrNew(yaml, "wallpaper");
 
     setValue(&config.wallpaper.file, getSubNodeOrNew(wallpaper, "file"));
@@ -111,6 +117,9 @@ void initConfig() {
 
 bool SaveConfig() {
     auto yaml = YAML::Node();
+    auto update = yaml["update"];
+    update["checkOnStart"] = config.update.checkOnStart;
+
     auto wallpaper = yaml["wallpaper"];
     wallpaper["file"] = config.wallpaper.file;
     wallpaper["fit"] = config.wallpaper.fit;

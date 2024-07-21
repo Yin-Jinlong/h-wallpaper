@@ -1,6 +1,7 @@
 #include <pre.h>
 
 #include "wallpaper-window.h"
+#include "sys-err.h"
 
 using namespace std;
 
@@ -49,6 +50,27 @@ int sendVideoFile(const str &file) {
     return 0;
 }
 
+void checkUpdateOnStart() {
+    STARTUPINFO si;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+
+    PROCESS_INFORMATION pi;
+    auto cmd = std::format(TEXT("{}-updater --only-new"), APP_NAME);
+    if (!CreateProcess(nullptr,
+                       cmd.data(),
+                       nullptr, nullptr,
+                       TRUE, 0,
+                       nullptr, nullptr,
+                       &si, &pi)) {
+        error_message(GetLastError());
+        return;
+    }
+    CloseHandle(pi.hThread);
+}
+
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 
     int argc = 0;
@@ -86,6 +108,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
             wallpaperWindow->PostQueryMaximized();
         }
     });
+
+    if (config.update.checkOnStart) {
+        checkUpdateOnStart();
+    }
 
     MSG msg;
     while (GetMessage(&msg, nullptr, 0, 0)) {

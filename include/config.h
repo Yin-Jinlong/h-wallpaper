@@ -18,6 +18,9 @@ enum class ContentFit {
 
 struct HWallpaperConfig {
     struct {
+        bool checkOnStart = true;
+    } update;
+    struct {
         std::u8string file;
         ContentFit fit;
         double time;

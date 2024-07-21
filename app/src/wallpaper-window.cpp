@@ -11,6 +11,8 @@
 #define PMID_EXIT 1
 #define PMID_CHANGE 2
 #define PMID_RUN_ON_STARTUP 3
+#define PMID_CHECK_UPDATE 4
+#define PMID_CHECK_UPDATE_ON_START 5
 #define PMID_FIT_MENU(fit) (((int)ContentFit::fit)+FIT_MENU_ID_START)
 
 #define FIT_MENU_ITEM(fit) checkedFlag(ContentFit::fit), PMID_FIT_MENU(fit)
@@ -197,7 +199,6 @@ namespace hww {
         Shell_NotifyIcon(NIM_ADD, &nid);
 
         trayMenu = CreatePopupMenu();
-
         trayFitMenu = CreatePopupMenu();
 
         AppendMenu(trayFitMenu, FIT_MENU_ITEM(CLIP), GET_CSTR(IDS_FIT_MENU_CLIP));
@@ -207,15 +208,36 @@ namespace hww {
         AppendMenu(trayFitMenu, FIT_MENU_ITEM(REPEAT), GET_CSTR(IDS_FIT_MENU_REPEAT));
         AppendMenu(trayFitMenu, FIT_MENU_ITEM(PIP), GET_CSTR(IDS_FIT_MENU_PIP));
 
-        AppendMenu(trayMenu,
-                   isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED, PMID_RUN_ON_STARTUP,
-                   GET_CSTR(IDS_RUN_ON_STARTUP));
+
+        AppendMenu(trayMenu, MF_UNCHECKED, PMID_RUN_ON_STARTUP, GET_CSTR(IDS_RUN_ON_STARTUP));
         AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
+
+        AppendMenu(trayMenu, MF_STRING, PMID_CHECK_UPDATE, L"检查更新");
+        AppendMenu(trayMenu, MF_UNCHECKED, PMID_CHECK_UPDATE_ON_START, L"启动时检查更新");
+        AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
+
         AppendMenu(trayMenu, MF_POPUP, (UINT_PTR) trayFitMenu, GET_CSTR(IDS_FIT_MENU));
         AppendMenu(trayMenu, MF_STRING, PMID_CHANGE, GET_CSTR(IDS_CHOOSE_FILE));
         AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
         AppendMenu(trayMenu, MF_STRING, PMID_EXIT, GET_CSTR(IDS_EXIT));
+
         Shell_NotifyIcon(NIM_ADD, &nid);
+    }
+
+    void updateCheckMenuStatus(HMENU menu, int id, bool checked) {
+        CheckMenuItem(menu, id, checked ? MF_CHECKED : MF_UNCHECKED);
+    }
+
+    void updateCheckMenu() {
+        updateCheckMenuStatus(trayMenu, PMID_RUN_ON_STARTUP, isRunOnStartup());
+        updateCheckMenuStatus(trayMenu, PMID_CHECK_UPDATE_ON_START, config.update.checkOnStart);
+
+        CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CLIP));
+        CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CONTAIN));
+        CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(STRETCH));
+        CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CENTER));
+        CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(REPEAT));
+        CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(PIP));
     }
 
     void onMenuClick(HWND hWnd, int id) {
@@ -254,6 +276,31 @@ namespace hww {
                     setRunOnStartup(!isRunOnStartup());
                     break;
                 }
+                case PMID_CHECK_UPDATE: {
+                    STARTUPINFO si;
+                    ZeroMemory(&si, sizeof(si));
+                    si.cb = sizeof(si);
+                    si.dwFlags = STARTF_USESHOWWINDOW;
+                    si.wShowWindow = SW_HIDE;
+
+                    PROCESS_INFORMATION pi;
+                    auto cmd = std::format(TEXT("{}-updater"), APP_NAME);
+                    if (!CreateProcess(nullptr,
+                                       cmd.data(),
+                                       nullptr, nullptr,
+                                       TRUE, 0,
+                                       nullptr, nullptr,
+                                       &si, &pi)) {
+                        error_message(GetLastError());
+                        break;
+                    }
+                    CloseHandle(pi.hThread);
+                    break;
+                }
+                case PMID_CHECK_UPDATE_ON_START:
+                    config.update.checkOnStart = !config.update.checkOnStart;
+                    SaveConfig();
+                    break;
             }
         }
     }
@@ -460,13 +507,7 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 onMenuClick(hWnd, PMID_CHANGE);
             } else if (lParam == WM_RBUTTONDOWN) {
                 SetForegroundWindow(hWnd);
-                CheckMenuItem(trayMenu, PMID_RUN_ON_STARTUP, isRunOnStartup() ? MF_CHECKED : MF_UNCHECKED);
-                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CLIP));
-                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CONTAIN));
-                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(STRETCH));
-                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(CENTER));
-                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(REPEAT));
-                CheckMenuItem(trayFitMenu, CHECK_FIT_MENU_ITEM(PIP));
+                updateCheckMenu();
                 int id = TrackPopupMenuEx(trayMenu, TPM_RETURNCMD, pt.x, pt.y, hWnd, nullptr);
                 onMenuClick(hWnd, id);
             }
