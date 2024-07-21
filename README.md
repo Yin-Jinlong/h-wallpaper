@@ -1,28 +1,33 @@
 # H-Wallpaper - 动态壁纸
 
-## 开始
+小巧，快速的壁纸引擎。
 
-拉去构建外部依赖。
+## 开发
 
-需要环境存在`cmake``3.28`以上版本
+需要：
 
-`setup`使用`pnpm`
+- `cmake` `3.28`以上版本
+- `pnpm`
 
-```shell
-./setup
-```
+### 开始
 
-## 构建
-
-构建需要用`MSVC`
+- 拉取构建外部依赖。`./setup`
 
 ### 构建
 
-目标`h-wallpaper`
+构建需要用`MSVC`
+
+```shell
+cmake --build build -j 8 --config Release
+```
 
 ### 安装
 
 `install`目标，生成在构建目录`h-wallpaper <version>`下
+
+```shell
+cmake --build build --target install -j 8
+```
 
 ## 使用
 
