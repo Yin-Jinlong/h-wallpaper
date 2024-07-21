@@ -63,7 +63,10 @@ include_directories(
 
 # 外部库
 
+find_package(cpp-httplib)
 find_package(ffmpeg)
+find_package(jsoncpp)
+find_package(openssl)
 find_package(skia)
 find_package(yaml-cpp)
 
@@ -93,9 +96,24 @@ install(FILES
         DESTINATION .
 )
 
+# cpp-httplib
+install_licenses(cpp-httplib
+        "${CPP_HTTPLIB_HOME}/share/licenses/httplib/LICENSE"
+)
+
+# jsoncpp
+install_licenses(jsoncpp
+        "${JSONCPP_SRC_DIR}/LICENSE"
+)
+
 # ffmpeg
 install_licenses(ffmpeg
         "${FFMPEG_HOME}/LICENSE.txt"
+)
+
+# openssl
+install_licenses(openssl
+        ${OPENSSL_HOME}/license.txt
 )
 
 # skia
