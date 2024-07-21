@@ -64,7 +64,7 @@ target_link_libraries(utils
 # 安装 #
 ########
 
-install(TARGETS utils DESTINATION .)
+install(TARGETS utils RUNTIME DESTINATION .)
 install(FILES ${DLLS} DESTINATION .)
 
 ########
