@@ -13,6 +13,8 @@ include(cmake/msvc.cmake)
 # 变量 #
 ########
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUT_DIR})
+
 string(TIMESTAMP BUILD_DATE %Y%m%d)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
