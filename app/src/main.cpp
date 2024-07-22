@@ -2,6 +2,7 @@
 
 #include "wallpaper-window.h"
 #include "sys-err.h"
+#include "wallpapers/video-wallpaper.h"
 
 using namespace std;
 
@@ -94,10 +95,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     wallpaperWindow->SetToDesktop();
     wallpaperWindow->Show();
 
+    auto wpp = (VideoWallpaper *) wallpaperWindow->GetWallpaper();
     if (argc > 1)
-        wallpaperWindow->SetVideo(str2u8str(args[1]));
+        wpp->SetVideo(args[1]);
     else if (!config.wallpaper.file.empty()) {
-        wallpaperWindow->SetVideo(config.wallpaper.file, false, config.wallpaper.time);
+        wpp->SetVideo(u8str2str(config.wallpaper.file), config.wallpaper.time);
     }
 
     std::atomic<bool> queryRun = true;

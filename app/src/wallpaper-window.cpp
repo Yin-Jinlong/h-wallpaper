@@ -1,9 +1,11 @@
 #include <wallpaper-window.h>
+#include <ctime>
 
 #include "resources.h"
 #include "wnd-utils.h"
 #include "string-table.h"
 #include "sys-err.h"
+#include "wallpapers/video-wallpaper.h"
 
 #define FIT_MENU_ID_START 100
 
@@ -27,7 +29,6 @@ extern str exeWPath;
 WallpaperWindow *wallpaperWindow;
 
 namespace hww {
-    DEVMODE dm;
     HMENU trayMenu;
     HMENU trayFitMenu;
     NOTIFYICONDATA nid;
@@ -67,10 +68,6 @@ namespace hww {
         return hWnd;
     }
 
-    double toTime(SYSTEMTIME t) {
-        return (t.wHour * 3600 + t.wMinute * 60 + t.wSecond) + t.wMilliseconds / 1000.0;
-    }
-
     void createMapping() {
         hMapFile = CreateFileMapping(
                 INVALID_HANDLE_VALUE,
@@ -89,47 +86,27 @@ namespace hww {
      * @param hdc
      * @return 是否重绘
      */
-    bool startPaint(HDC hdc) {
-        // 没有视频，绘制黑色
-        if (!wallpaperWindow->decoderAvailable()) {
+    void startPaint(HDC hdc) {
+        // 没有壁纸，绘制黑色
+        auto wpp = wallpaperWindow->GetWallpaper();
+        if (!wpp) {
             HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
             RECT rect = {0};
             rect.right = wallpaperWindow->GetWidth();
             rect.bottom = wallpaperWindow->GetHeight();
             FillRect(hdc, &rect, hBrush);
             DeleteObject(hBrush);
-            return false;
+            return;
         }
-
-        // 暂停了
-        if (wallpaperWindow->decoderPaused()) {
-            return false;
-        }
-
-        // 还没加载第一帧
-        if (!wallpaperWindow->firstFrameLoaded()) {
-            return true;
-        }
-
-        SYSTEMTIME now;
-        GetSystemTime(&now);
-        double dt = toTime(now) - wallpaperWindow->lastTime;
-        if (wallpaperWindow->lastTime == 0) {
-            dt = 1.0 / dm.dmDisplayFrequency;
-        }
-        wallpaperWindow->lastTime = toTime(now);
-        // 时间差过大，则按1s算
-        wallpaperWindow->nowTime += dt > 1 ? 1 : dt;
 
         HDC mdc = CreateCompatibleDC(hdc);
-        if (wallpaperWindow->paint(mdc)) {
-            BitBlt(hdc, 0, 0,
-                   wallpaperWindow->GetWidth(),
-                   wallpaperWindow->GetHeight(),
-                   mdc, 0, 0, SRCCOPY);
-        }
+        wallpaperWindow->paint(mdc);
+        BitBlt(hdc, 0, 0,
+               wallpaperWindow->GetWidth(),
+               wallpaperWindow->GetHeight(),
+               mdc, 0, 0, SRCCOPY);
+
         DeleteDC(mdc);
-        return true;
     }
 
     bool regHasValue(HKEY hkey, LPCWSTR subKey, LPCWSTR keyName) {
@@ -185,8 +162,6 @@ namespace hww {
     }
 
     void createTray(HWND hWnd) {
-        dm.dmSize = sizeof(DEVMODE);
-        EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
 
         nid.cbSize = sizeof(nid);
         nid.hWnd = hWnd;
@@ -266,8 +241,9 @@ namespace hww {
                     ofn.lpstrInitialDir = nullptr;
                     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
                     if (GetOpenFileName(&ofn)) {
-                        wallpaperWindow->SetVideo(str2u8str(ofn.lpstrFile));
-                        InvalidateRect(hWnd, nullptr, FALSE);
+                        auto wpp = (VideoWallpaper *) wallpaperWindow->GetWallpaper();
+                        wpp->SetVideo(ofn.lpstrFile);
+                        wallpaperWindow->Redraw();
                     }
                     break;
                 }
@@ -326,6 +302,8 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
     }
 
     avformat_network_init();
+
+    wallpaperPtr.store(new VideoWallpaper());
 }
 
 void WallpaperWindow::Show() {
@@ -350,108 +328,39 @@ void WallpaperWindow::SetToDesktop() {
     SetParent(hWnd, desktop);
 }
 
-void WallpaperWindow::SetVideo(const u8str &file, bool save, double seekTime) {
-    if (file.empty())
-        return;
-    VideoDecoder *nd;
-    try {
-        wallpaperWindow->pause();
-        nd = new VideoDecoder(file);
-    } catch (...) {
-        wallpaperWindow->resume();
-        return;
-    }
-    {
-        auto decoder = decoderPtr.load();
-        if (decoder) {
-            decoder->close();
-            delete decoder;
-            decoderPtr.store(nullptr);
-        }
-    }
-    nowTime = 0;
-    frameTime = 0;
-    lastTime = 0;
-    //**************************//
-    // 到此步屏幕（窗口）尺寸已经有了 //
-    // 前面WM_SIZE已经处理过了     //
-    //**************************//
-    nd->maxWidth = width;
-    nd->maxHeight = height;
-    decoderPtr.store(nd);
-    if (save) {
-        config.wallpaper.file = file;
-        SaveConfig();
-    }
-    nd->waitDecodeNextFrame();
-    if (seekTime > 0) {
-        SeekTo(seekTime);
-    }
-    nd->startDecode();
-    InvalidateRect(hWnd, nullptr, false);
-}
-
 WallpaperWindow::~WallpaperWindow() {
     SaveConfig();
-
-    auto decoder = decoderPtr.load();
-    if (decoder) {
-        decoder->close();
-        delete decoder;
-        decoderPtr.store(nullptr);
-    }
 }
 
-bool WallpaperWindow::paint(HDC hdc) {
-    auto decoder = decoderPtr.load();
-    if (!decoder || frameTime > nowTime)
-        return false;
+void WallpaperWindow::paint(HDC hdc) {
+    auto wallpaper = wallpaperPtr.load();
+    if (!wallpaper)
+        return;
 
-    auto vf = decoder->getFrame();
-    if (!vf || !vf->data)
-        return false;
-    config.wallpaper.time = av_q2d(decoder->time_base) * vf->pts;
-    auto dt = av_q2d(decoder->time_base) * vf->duration;
-    frameTime += dt;
-
-    return drawer.Draw(hdc, vf);
-}
-
-bool WallpaperWindow::decoderAvailable() {
-    auto decoder = decoderPtr.load();
-    return decoder && decoder->running();
-}
-
-bool WallpaperWindow::firstFrameLoaded() {
-    auto decoder = decoderPtr.load();
-    return decoder && decoder->firstFrameLoaded();
+    wallpaper->draw(hdc);
 }
 
 void WallpaperWindow::SetSize(int width, int height) {
     this->width = width;
     this->height = height;
-    drawer.SetSize(width, height);
-}
-
-bool WallpaperWindow::decoderPaused() {
-    auto decoder = decoderPtr.load();
-    return !decoder || decoder->paused();
+    auto wallpaper = wallpaperPtr.load();
+    if (wallpaper)
+        wallpaper->SetSize(width, height);
 }
 
 void WallpaperWindow::pause() {
-    auto decoder = decoderPtr.load();
-    if (decoder) {
-        decoder->pause();
+    auto wallpaper = wallpaperPtr.load();
+    if (wallpaper) {
+        wallpaper->Pause();
     }
 }
 
 void WallpaperWindow::resume() {
-    auto decoder = decoderPtr.load();
-    if (decoder) {
-        decoder->resume();
-        wallpaperWindow->lastTime = 0;
+    auto wallpaper = wallpaperPtr.load();
+    if (wallpaper) {
+        wallpaper->Resume();
     }
-    InvalidateRect(hWnd, nullptr, false);
+    Redraw();
 }
 
 void WallpaperWindow::PostQueryMaximized() {
@@ -466,13 +375,19 @@ int WallpaperWindow::GetHeight() const {
     return height;
 }
 
-void WallpaperWindow::SeekTo(double time) {
-    auto decoder = decoderPtr.load();
-    if (decoder) {
-        decoder->seekTo(time);
-        nowTime = time;
-        frameTime = time;
-    }
+void WallpaperWindow::Redraw() {
+    InvalidateRect(hWnd, nullptr, false);
+}
+
+Wallpaper *WallpaperWindow::GetWallpaper() {
+    return wallpaperPtr.load();
+}
+
+bool WallpaperWindow::Paused() const {
+    auto wpp = wallpaperPtr.load();
+    if (wpp)
+        return wpp->Paused();
+    return false;
 }
 
 LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -493,9 +408,7 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
-            if (startPaint(hdc)) {
-                InvalidateRect(hWnd, nullptr, FALSE);
-            }
+            startPaint(hdc);
             EndPaint(hWnd, &ps);
             break;
         }
@@ -518,17 +431,18 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             Shell_NotifyIcon(NIM_DELETE, &nid);
             break;
         case WM_APP_QUERY_MAXIMIZED: {
-            static double lastSaveTime = 0;
+            static time_t lastSaveTime = 0;
             // 每5s播放保存一次配置
             // 以免在意外结束进程后丢失播放进度
-            if (wallpaperWindow->nowTime - lastSaveTime > 5) {
+            auto nowTime = time(nullptr);
+            if (nowTime - lastSaveTime > 5) {
                 SaveConfig();
-                lastSaveTime = wallpaperWindow->nowTime;
+                lastSaveTime = nowTime;
             }
             if (HasWindowMaximized()) {
-                if (!wallpaperWindow->decoderPaused())
+                if (!wallpaperWindow->Paused())
                     wallpaperWindow->pause();
-            } else if (wallpaperWindow->decoderPaused()) {
+            } else if (wallpaperWindow->Paused()) {
                 wallpaperWindow->resume();
             }
             break;
@@ -544,7 +458,8 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 memcpy(file, pData + 2, len);
                 file[len] = '\0';
                 UnmapViewOfFile(pData);
-                wallpaperWindow->SetVideo(file);
+                auto wpp = (VideoWallpaper *) wallpaperWindow->GetWallpaper();
+                wpp->SetVideo(u8str2str(file));
             }
             break;
         }

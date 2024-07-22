@@ -10,6 +10,7 @@
 
 #include "video-decoder.h"
 #include "drawer.h"
+#include "wallpapers/wallpaper.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -29,12 +30,7 @@ private:
 
     HWND hWnd;
 
-    /**
-     * 视频解码器
-     */
-    std::atomic<VideoDecoder *> decoderPtr = nullptr;
-
-    Drawer drawer;
+    std::atomic<Wallpaper *> wallpaperPtr = nullptr;
 
     /**
      * 窗口宽高
@@ -49,19 +45,6 @@ public:
      * @return 窗口句柄
      */
     static HWND FindExist();
-
-    /**
-     * 当前帧时间
-     */
-    double frameTime = 0;
-    /**
-     * 当前时间
-     */
-    double nowTime = 0;
-    /**
-     * 上一帧时间，用于更新当前时间
-     */
-    double lastTime = 0;
 
     explicit WallpaperWindow(HINSTANCE hInstance);
 
@@ -78,38 +61,11 @@ public:
     void SetToDesktop();
 
     /**
-     * 设置壁纸
-     *
-     * @param file 视频文件
-     */
-    void SetVideo(const u8str &file, bool save = true, double seekTime = 0.0);
-
-    /**
-     * @brief 跳转到指定帧
-     *
-     * @param time 时间
-     */
-    void SeekTo(double time);
-
-    /**
      * 绘制壁纸
      *
      * @param hdc 绘图设备
      */
-    bool paint(HDC hdc);
-
-    /**
-     * 解码器可用
-     *
-     * @return 是否可用
-     */
-    bool decoderAvailable();
-
-    /**
-     * 第一帧是否已加载
-     * @return 是否已加载
-     */
-    bool firstFrameLoaded();
+    void paint(HDC hdc);
 
     /**
      * 设置窗口大小
@@ -118,13 +74,6 @@ public:
      * @param height 高度
      */
     void SetSize(int width, int height);
-
-    /**
-     * 解码器是否已暂停
-     *
-     * @return 是否已暂停
-     */
-    bool decoderPaused();
 
     /**
      * 暂停
@@ -154,4 +103,10 @@ public:
      * @return 高度
      */
     int GetHeight() const;
+
+    void Redraw();
+
+    bool Paused() const;
+
+    Wallpaper *GetWallpaper();
 };

@@ -33,6 +33,8 @@
 
 // 替换
 
+#define USE_RET [[nodiscard]]
+
 #define WM_APP_VIDEO_FILE (WM_APP+1)
 #define WM_APP_QUERY_MAXIMIZED (WM_APP+2)
 
