@@ -85,6 +85,7 @@ void VideoWallpaper::draw(SkCanvas *canvas) {
 
     auto decoder = decoderPtr.load();
     if (!decoder || frameTime > nowTime) {
+        requestRedraw();
         return;
     }
 
