@@ -9,7 +9,7 @@
 #include <include/core/SkSurface.h>
 
 #include "video-decoder.h"
-#include "drawer.h"
+#include "drawers/drawer.h"
 #include "wallpapers/wallpaper.h"
 
 extern "C" {

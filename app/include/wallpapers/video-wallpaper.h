@@ -1,15 +1,15 @@
 #pragma once
 
+#include "drawers/video-drawer.h"
 #include "wallpaper.h"
 #include "video-decoder.h"
-#include "drawer.h"
 
 class VideoWallpaper : public Wallpaper {
 private:
     DEVMODE dm;
 
     std::atomic<VideoDecoder *> decoderPtr;
-    Drawer drawer;
+    VideoDrawer drawer;
 
     double nowTime;
     double frameTime;

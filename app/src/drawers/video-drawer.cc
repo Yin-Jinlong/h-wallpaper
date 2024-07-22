@@ -1,15 +1,15 @@
-#include <drawer.h>
+#include <drawers/video-drawer.h>
 #include "image-util.h"
 
 extern HWallpaperConfig config;
 
-Drawer::Drawer() {
+VideoDrawer::VideoDrawer() {
     pipFilter = SkImageFilters::Blur(10, 10, nullptr);
     pipPaint.setImageFilter(pipFilter);
 }
 
 
-bool Drawer::Draw(SkCanvas *canvas, VideoFrame *frame) {
+bool VideoDrawer::Draw(SkCanvas *canvas) {
     if (!frame)
         return false;
 
@@ -29,7 +29,7 @@ bool Drawer::Draw(SkCanvas *canvas, VideoFrame *frame) {
     return true;
 }
 
-void Drawer::DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint) {
+void VideoDrawer::DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint) {
 
     auto imgW = (float) image->width();
     auto imgH = (float) image->height();
@@ -108,8 +108,6 @@ void Drawer::DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint
     canvas->drawImageRect(image, dst, SkSamplingOptions(), paint);
 }
 
-void Drawer::SetSize(int width, int height) {
-    this->width = (float) width;
-    this->height = (float) height;
-    rate = ((double) width) / height;
+void VideoDrawer::SetFrame(VideoFrame *frame) {
+    this->frame = frame;
 }

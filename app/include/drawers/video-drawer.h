@@ -2,29 +2,25 @@
 
 #include <pre.h>
 
-#include <include/core/SkBitmap.h>
-#include <include/core/SkCanvas.h>
-#include <include/core/SkColor.h>
-#include <include/core/SkPaint.h>
-#include <include/core/SkSurface.h>
 #include <include/effects/SkImageFilters.h>
 
+#include "drawer.h"
 #include "video-decoder.h"
 #include "config.h"
 
-class Drawer {
+class VideoDrawer : public Drawer {
 private:
 
     sk_sp<SkImageFilter> pipFilter;
     SkPaint pipPaint;
 
-    float width = 0, height = 0;
-
-    double rate = 0;
+    VideoFrame *frame;
 
 public:
 
-    Drawer();
+    VideoDrawer();
+
+    void SetFrame(VideoFrame *frame);
 
     /**
      * @brief 绘制帧
@@ -32,9 +28,8 @@ public:
      * @param frame 帧
      * @return 是否绘制了
      */
-    bool Draw(SkCanvas *canvas, VideoFrame *frame);
+    bool Draw(SkCanvas *canvas) override;
 
     void DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
 
-    void SetSize(int width, int height);
 };

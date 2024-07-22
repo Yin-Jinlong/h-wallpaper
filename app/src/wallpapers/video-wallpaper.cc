@@ -98,7 +98,8 @@ void VideoWallpaper::draw(SkCanvas *canvas) {
     auto dt = av_q2d(decoder->time_base) * vf->duration;
     frameTime += dt;
 
-    if (drawer.Draw(canvas, vf))
+    drawer.SetFrame(vf);
+    if (drawer.Draw(canvas))
         requestRedraw();
 }
 

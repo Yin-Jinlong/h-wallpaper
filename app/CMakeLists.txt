@@ -34,6 +34,7 @@ include_directories(
 ##########
 
 aux_source_directory("src" SRCS)
+aux_source_directory("src/drawers" SRCS)
 aux_source_directory("src/wallpapers" SRCS)
 
 add_executable(${PROJECT_NAME} WIN32
