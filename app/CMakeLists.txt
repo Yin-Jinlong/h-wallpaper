@@ -9,6 +9,10 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUT_DIR})
 
+add_definitions(
+        -DYAML_CPP_STATIC_DEFINE
+)
+
 #########
 # 编译器 #
 #########
@@ -74,7 +78,7 @@ target_link_libraries(${PROJECT_NAME}
         # skia
         ${SKIA_LIB_NAMES}
 
-        # yaml-cp
+        # yaml-cpp
         ${YAML_CPP_LIBS}
 )
 
@@ -92,8 +96,6 @@ file(GLOB DLLS
         "${FFMPEG_BIN_DIR}/swscale-8.dll"
         # skia
         ${SKIA_DLLS}
-        # yaml-cpp
-        "${YAML_CPP_BIN_DIR}/*.dll"
 )
 
 foreach (DLL ${DLLS})

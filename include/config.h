@@ -4,6 +4,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+
 enum class ContentFit {
     CLIP,
     CONTAIN,
