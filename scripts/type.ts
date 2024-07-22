@@ -54,9 +54,12 @@ declare interface GitLib extends Lib {
  * @author YJL
  */
 declare interface Builds {
-    'pre-build-cmd': string
-    'build-cmd': string
-    'install-cmd': string
+    'pre-build-cmd'?: string
+    'pre-build-cmake-extras': string[]
+    'build-cmd'?: string
+    'build-cmake-extras'?: string[]
+    'install-cmd'?: string
+    'install-cmake-extras'?: string[]
 }
 
 /**

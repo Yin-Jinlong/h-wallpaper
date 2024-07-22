@@ -28,7 +28,7 @@ export async function gitClone(name: string, lib: GitLib) {
         oraP.succeed(`Updated ${name}`)
     } else {// 不存在，浅克隆
         console.log(`${pc.cyan('Cloning')} ${name}...`)
-        let p = spawnSync('git', ['clone', '--depth=1', '-b', lib.tag, '--single-branch', lib.url, name], {
+        let p = spawnSync('git', ['clone', '--recursive', '--depth=1', '-b', lib.tag, '--single-branch', lib.url, name], {
             cwd: DOWNLOAD_DIR,
             stdio: 'inherit'
         })
@@ -48,12 +48,30 @@ export async function gitClone(name: string, lib: GitLib) {
  * @author YJL
  */
 export async function gitBuild(name: string, lib: GitLib) {
+
     // 不同构建类型
-    for (let buildName in lib.builds) {
-        let build = lib.builds[buildName]
+    for (let buildType in lib.builds) {
+        let build = lib.builds[buildType]
+
+        function getCmd(cmdName: 'pre-build' | 'build' | 'install') {
+            let cmd = build?.[`${cmdName}-cmd` as keyof Builds] as string | undefined
+            let extras = build?.[`${cmdName}-cmake-extras` as keyof Builds] as string[] | undefined ?? []
+            if (cmd)
+                return cmd;
+            let args = extras.join(' ')
+            let tn = buildType.toLowerCase()
+            switch (cmdName) {
+                case "pre-build":
+                    return `cmake -B build-${tn} -S . ${args} -DCMAKE_INSTALL_PREFIX=../../libs/${name}-${buildType}`
+                case "build":
+                    return `cd build-${tn} && cmake --build . --config ${buildType}`
+                case "install":
+                    return `cd build-${tn} && cmake --install . --config ${buildType}`
+            }
+        }
 
         // 构建前命令
-        let preBuildCmd = build['pre-build-cmd']
+        let preBuildCmd = getCmd('pre-build')
         if (preBuildCmd) {
             oraP.start(`Pre-build ${name}...`)
             let p = spawnSync('cmd', ['/C', preBuildCmd], {
@@ -68,7 +86,7 @@ export async function gitBuild(name: string, lib: GitLib) {
         }
 
         // 构建命令
-        let buildCmd = build['build-cmd']
+        let buildCmd = getCmd('build')
         if (buildCmd) {
             oraP.start(`Build ${name}...`)
             let p = spawnSync('cmd', ['/C', buildCmd], {
@@ -83,7 +101,7 @@ export async function gitBuild(name: string, lib: GitLib) {
         }
 
         // 安装命令
-        let installCmd = build['install-cmd']
+        let installCmd = getCmd('install')
         if (installCmd) {
             oraP.start(`Install ${name}...`)
             let p = spawnSync('cmd', ['/C', installCmd], {
