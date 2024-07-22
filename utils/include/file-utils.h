@@ -38,7 +38,7 @@ HWPP_API BYTE *file_read(const std::string &name, size_t &len);
  *
  * @author YJL
  */
-HWPP_API bool file_write(const std::string &name, void *content, size_t size);
+HWPP_API bool file_write(const std::string &name, char *content, std::streamsize size);
 
 /**
  * @brief 删除文件

@@ -244,7 +244,9 @@ namespace hww {
                     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
                     if (GetOpenFileName(&ofn)) {
                         auto wpp = (VideoWallpaper *) wallpaperWindow->GetWallpaper();
-                        wpp->SetVideo(ofn.lpstrFile);
+                        if (wpp->SetVideo(ofn.lpstrFile)) {
+                            SaveConfig();
+                        }
                         wallpaperWindow->Redraw();
                     }
                     break;
@@ -338,9 +340,7 @@ void WallpaperWindow::SetToDesktop() {
     SetParent(hWnd, desktop);
 }
 
-WallpaperWindow::~WallpaperWindow() {
-    SaveConfig();
-}
+WallpaperWindow::~WallpaperWindow() = default;
 
 void WallpaperWindow::paint(HDC hdc) {
     auto wallpaper = wallpaperPtr.load();
@@ -495,7 +495,9 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 file[len] = '\0';
                 UnmapViewOfFile(pData);
                 auto wpp = (VideoWallpaper *) wallpaperWindow->GetWallpaper();
-                wpp->SetVideo(u8str2str(file));
+                if (wpp->SetVideo(u8str2str(file))) {
+                    SaveConfig();
+                }
             }
             break;
         }

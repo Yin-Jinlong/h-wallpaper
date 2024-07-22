@@ -14,16 +14,16 @@ VideoWallpaper::~VideoWallpaper() {
 
 }
 
-void VideoWallpaper::SetVideo(const str &file, double seekTime) {
+bool VideoWallpaper::SetVideo(const str &file, double seekTime) {
     if (file.empty())
-        return;
+        return false;
     VideoDecoder *nd;
     try {
         Pause();
         nd = new VideoDecoder(str2u8str(file));
     } catch (...) {
         Resume();
-        return;
+        return false;
     }
     {
         auto decoder = decoderPtr.load();
@@ -33,6 +33,7 @@ void VideoWallpaper::SetVideo(const str &file, double seekTime) {
             decoderPtr.store(nullptr);
         }
     }
+    config.wallpaper.file = str2u8str(file);
     nowTime = 0;
     frameTime = 0;
     lastTime = 0;
@@ -45,6 +46,7 @@ void VideoWallpaper::SetVideo(const str &file, double seekTime) {
         SeekTo(seekTime);
     }
     nd->startDecode();
+    return true;
 }
 
 void VideoWallpaper::Pause() {

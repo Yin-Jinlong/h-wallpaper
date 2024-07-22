@@ -1,6 +1,10 @@
 #include <config.h>
 
 #include <file-utils.h>
+#include <utility>
+#include <vector>
+#include <map>
+#include <sstream>
 
 HWallpaperConfig config;
 
@@ -8,123 +12,135 @@ extern std::string appPath;
 
 std::string configFile;
 
-template<>
-struct YAML::convert<ContentFit> {
-    static YAML::Node encode(const ContentFit &rhs) {
-        switch (rhs) {
-            case ContentFit::CONTAIN:
-                return YAML::Node("contain");
-            case ContentFit::STRETCH:
-                return YAML::Node("stretch");
-            case ContentFit::CENTER:
-                return YAML::Node("center");
-            case ContentFit::REPEAT:
-                return YAML::Node("repeat");
-            case ContentFit::PIP:
-                return YAML::Node("pip");
-            default:
-                return YAML::Node("clip");
-        }
-    }
 
-    static bool decode(const YAML::Node &node, ContentFit &rhs) {
-        if (node.IsScalar()) {
-            const std::string &value = node.Scalar();
-            if (value == "clip")
-                rhs = ContentFit::CLIP;
-            else if (value == "contain")
-                rhs = ContentFit::CONTAIN;
-            else if (value == "stretch")
-                rhs = ContentFit::STRETCH;
-            else if (value == "center")
-                rhs = ContentFit::CENTER;
-            else if (value == "repeat")
-                rhs = ContentFit::REPEAT;
-            else if (value == "pip")
-                rhs = ContentFit::PIP;
-            else
-                rhs = ContentFit::CLIP;
-            return true;
-        }
-        return false;
-    }
-};
-
-template<>
-struct YAML::convert<u8str> {
-    static YAML::Node encode(const u8str &rhs) {
-        return YAML::Node(u8str2string(rhs));
-    }
-
-    static bool decode(const YAML::Node &node, u8str &rhs) {
-        if (node.IsScalar()) {
-            const std::string &value = node.Scalar();
-            rhs = string2u8string(value);
-            return true;
-        }
-        return false;
-    }
-};
-
-template<typename T>
-bool setValue(T *configPtr, const YAML::Node &key) {
-    try {
-        if (key.IsScalar()) {
-            (*configPtr) = key.as<T>();
-            return true;
-        }
-    } catch (...) {
-    }
-    return false;
+std::pair<str, str> line_get_key_value(const str &line) {
+    auto index = line.find('=');
+    if (index != str::npos)
+        return std::make_pair(line.substr(0, index), line.substr(index + 1));
+    return std::make_pair(line, TEXT(""));
 }
 
-YAML::Node getSubNodeOrNew(const YAML::Node &node, const std::string &key) {
-    if (node.IsDefined()) {
-        return node.IsMap() ? node[key] : YAML::Node();
-    }
-    return YAML::Node();
+str strTrim(const str &str, bool start = true, bool end = true) {
+    if (str.empty())
+        return TEXT("");
+    int si = 0, ei = str.size() - 1;
+    if (start)
+        while (si <= ei && str[si] == ' ')
+            si++;
+    if (end)
+        while (si <= ei && str[ei] == ' ')
+            ei--;
+    return str.substr(si, ei - si + 1);
 }
+
 
 void initConfig() {
-    configFile = appPath + "/config.yaml";
+    configFile = appPath + "/config";
     if (!file_exists(configFile)) {
         file_create_empty(configFile);
     }
 
-    std::ifstream in(configFile, std::ios::in, std::ios::binary);
-    if (!in.is_open()) {
-        return;
+    size_t len;
+    auto data = file_read(configFile, len);
+    u8str u8text(data, data + len);
+    free(data);
+
+    std::wistringstream stream(u8str2str(u8text));
+    str line;
+    int lineNumber = 0;
+
+    std::map<str, str> map;
+
+    while (std::getline(stream, line)) {
+        lineNumber++;
+        if (line.ends_with('\r'))
+            line = line.substr(0, line.size() - 1);
+        line = strTrim(line);
+        if (line[0] == '#')
+            continue;
+        auto kv = line_get_key_value(line);
+        auto key = strTrim(kv.first);
+        if (key.empty())
+            continue;
+        auto v = strTrim(kv.second);
+        // 转义字符串
+        if (v[0] == '"') {
+            if (v.ends_with('"'))
+                v = v.substr(1, v.size() - 2);
+        }
+        map[key] = v;
     }
-    in.seekg(0, std::ios::end);
-    auto len = in.tellg();
-    in.seekg(0, std::ios::beg);
-    auto data = new char[len];
-    in.read(data, len);
-    in.close();
 
-    auto yaml = YAML::Load(u8str2string(reinterpret_cast<char8_t *>(data)));
-    delete[] data;
-
-    auto update = getSubNodeOrNew(yaml, "update");
-    setValue(&config.update.checkOnStart, getSubNodeOrNew(update, "checkOnStart"));
-
-    auto wallpaper = getSubNodeOrNew(yaml, "wallpaper");
-
-    setValue(&config.wallpaper.file, getSubNodeOrNew(wallpaper, "file"));
-    setValue(&config.wallpaper.fit, getSubNodeOrNew(wallpaper, "fit"));
-    setValue(&config.wallpaper.time, getSubNodeOrNew(wallpaper, "time"));
+    config.update.checkOnStart = map[TEXT("update.checkOnStart")] == TEXT("true");
+    config.wallpaper.file = str2u8str(map[TEXT("wallpaper.file")]);
+    config.wallpaper.fit = parse_content_fit(map[TEXT("wallpaper.fit")]);
+    auto ts = map[TEXT("wallpaper.time")];
+    if (ts.empty())
+        ts = TEXT("0");
+    else {
+        int dotCount = 0;
+        for (auto c: ts) {
+            if (c >= '0' && c <= '9')
+                continue;
+            if (c == '.') {
+                dotCount++;
+                if (dotCount > 1)
+                    return;
+            }
+        }
+    }
+    config.wallpaper.time = std::stoi(ts);
 }
 
 bool SaveConfig() {
-    auto yaml = YAML::Node();
-    auto update = yaml["update"];
-    update["checkOnStart"] = config.update.checkOnStart;
+    std::wostringstream out;
+    out << TEXT("update.checkOnStart=") << (config.update.checkOnStart ? TEXT("true") : TEXT("false")) << std::endl;
+    out << TEXT("wallpaper.file=") << u8str2str(config.wallpaper.file) << std::endl;
+    out << TEXT("wallpaper.fit=") << content_fit_to_str(config.wallpaper.fit) << std::endl;
+    out << TEXT("wallpaper.time=") << config.wallpaper.time << std::endl;
 
-    auto wallpaper = yaml["wallpaper"];
-    wallpaper["file"] = config.wallpaper.file;
-    wallpaper["fit"] = config.wallpaper.fit;
-    wallpaper["time"] = config.wallpaper.time;
-    auto dump = string2u8string(YAML::Dump(yaml));
-    auto size = strlen(reinterpret_cast<char *>(dump.data()));
-    return file_write(configFile, dump.data(), size);
+    u8str data = str2u8str(out.str());
+    auto byteCount = strlen(reinterpret_cast<const char *>(data.c_str()));
+    file_write(configFile, (char *) data.c_str(), byteCount);
+    return true;
+}
+
+ContentFit parse_content_fit(const str &fit) {
+    if (fit == TEXT("clip")) {
+        return ContentFit::CLIP;
+    }
+    if (fit == TEXT("contain")) {
+        return ContentFit::CONTAIN;
+    }
+    if (fit == TEXT("stretch")) {
+        return ContentFit::STRETCH;
+    }
+    if (fit == TEXT("center")) {
+        return ContentFit::CENTER;
+    }
+    if (fit == TEXT("repeat")) {
+        return ContentFit::REPEAT;
+    }
+    if (fit == TEXT("pip")) {
+        return ContentFit::PIP;
+    }
+    return ContentFit::CLIP;
+}
+
+str content_fit_to_str(ContentFit fit) {
+    switch (fit) {
+        case ContentFit::CLIP:
+            return TEXT("clip");
+        case ContentFit::CONTAIN:
+            return TEXT("contain");
+        case ContentFit::STRETCH:
+            return TEXT("stretch");
+        case ContentFit::CENTER:
+            return TEXT("center");
+        case ContentFit::REPEAT:
+            return TEXT("repeat");
+        case ContentFit::PIP:
+            return TEXT("pip");
+    }
+    return TEXT("clip");
 }

@@ -2,8 +2,6 @@
 
 #include <pre.h>
 
-#include <yaml-cpp/yaml.h>
-
 
 enum class ContentFit {
     CLIP,
@@ -15,14 +13,20 @@ enum class ContentFit {
      * 画中画
      */
     PIP,
+
+
 };
+
+ContentFit parse_content_fit(const str &fit);
+
+str content_fit_to_str(ContentFit fit);
 
 struct HWallpaperConfig {
     struct {
         bool checkOnStart = true;
     } update;
     struct {
-        std::u8string file;
+        u8str file;
         ContentFit fit;
         double time;
     } wallpaper;

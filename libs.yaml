@@ -8,8 +8,6 @@ libs:
     builds:
       Release:
         pre-build-cmd: cmake -B build-release -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../libs/cpp-httplib
-        build-cmd: cd build-release && cmake --build .
-        install-cmd: cd build-release && cmake --install .
   ffmpeg:
     type: zip
     url: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-07-19-12-54/ffmpeg-n7.0.1-32-gdb90c46fff-win64-lgpl-shared-7.0.zip
@@ -30,13 +28,7 @@ libs:
     tag: 1.9.5
     builds:
       Release:
-        pre-build-cmd: cmake -B build-release -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../libs/jsoncpp-Release
-        build-cmd: cd build-release && cmake --build . --config Release
-        install-cmd: cd build-release && cmake --install . --config Release
       Debug:
-        pre-build-cmd: cmake -B build-debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../libs/jsoncpp-Debug
-        build-cmd: cd build-debug && cmake --build . --config Debug
-        install-cmd: cd build-debug && cmake --install . --config Debug
   skia:
     type: zip
     url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/vm115/skia-m115-default-shared-release.zip
@@ -51,16 +43,3 @@ libs:
     libs:
       libs/skia-static/:
         - "/"
-  yaml-cpp:
-    type: git
-    url: https://github.com/jbeder/yaml-cpp.git
-    tag: 0.8.0
-    builds:
-      Release:
-        pre-build-cmd: cmake -B build-release -S . -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_C_FLAGS="/MT" -DCMAKE_INSTALL_PREFIX=../../libs/yaml-cpp-Release
-        build-cmd: cd build-release && cmake --build . --config Release
-        install-cmd: cd build-release && cmake --install . --config Release
-      Debug:
-        pre-build-cmd: cmake -B build-debug -S . -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebug -DCMAKE_C_FLAGS="/MTd" -DCMAKE_INSTALL_PREFIX=../../libs/yaml-cpp-Debug
-        build-cmd: cd build-debug && cmake --build . --config Debug
-        install-cmd: cd build-debug && cmake --install . --config Debug

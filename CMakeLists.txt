@@ -70,7 +70,6 @@ find_package(ffmpeg)
 find_package(jsoncpp)
 find_package(openssl)
 find_package(skia)
-find_package(yaml-cpp)
 
 
 # 子项目
@@ -121,9 +120,4 @@ install_licenses(openssl
 # skia
 install_licenses(skia
         ${SKIA_HOME}/LICENSE
-)
-
-# yamp-cpp
-install_licenses(yaml-cpp
-        ${YAML_CPP_SRC_DIR}/LICENSE
 )

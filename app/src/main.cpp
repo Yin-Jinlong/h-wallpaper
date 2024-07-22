@@ -96,9 +96,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     wallpaperWindow->Show();
 
     auto wpp = (VideoWallpaper *) wallpaperWindow->GetWallpaper();
-    if (argc > 1)
-        wpp->SetVideo(args[1]);
-    else if (!config.wallpaper.file.empty()) {
+    if (argc > 1) {
+        if (wpp->SetVideo(args[1])) {
+            SaveConfig();
+        }
+    } else if (!config.wallpaper.file.empty()) {
         wpp->SetVideo(u8str2str(config.wallpaper.file), config.wallpaper.time);
     }
 

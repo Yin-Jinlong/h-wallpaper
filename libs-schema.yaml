@@ -42,7 +42,7 @@ definitions:
       builds:
         patternProperties:
           .*:
-            $ref: "#/definitions/build-cmd"
+            $schema: "#/definitions/build-cmd"
   zip-lib:
     type: object
     properties:
@@ -67,7 +67,19 @@ definitions:
     properties:
       pre-build-cmd:
         type: string
+      pre-build-cmake-extras:
+        type: array
+        items:
+          - type: string
       build-cmd:
         type: string
+      build-cmake-extras:
+        type: array
+        items:
+          - type: string
       install-cmd:
         type: string
+      install-cmake-extras:
+        type: array
+        items:
+          - type: string

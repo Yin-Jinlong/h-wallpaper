@@ -54,7 +54,7 @@ public:
 
     void Restart() override;
 
-    void SetVideo(const str &file, double seekTime = 0);
+    bool SetVideo(const str &file, double seekTime = 0);
 
     void SeekTo(double time);
 

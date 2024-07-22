@@ -31,10 +31,10 @@ BYTE *file_read(const std::string &name, size_t &len) {
     return nullptr;
 }
 
-bool file_write(const std::string &name, void *content, size_t size) {
+bool file_write(const std::string &name, char *content, std::streamsize size) {
     std::ofstream file(name, std::ios::out);
     if (file.is_open()) {
-        file.write((char *) content, size);
+        file.write(content, size);
         file.close();
         return true;
     }

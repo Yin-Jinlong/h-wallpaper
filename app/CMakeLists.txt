@@ -77,9 +77,6 @@ target_link_libraries(${PROJECT_NAME}
 
         # skia
         ${SKIA_LIB_NAMES}
-
-        # yaml-cpp
-        ${YAML_CPP_LIBS}
 )
 
 #########
