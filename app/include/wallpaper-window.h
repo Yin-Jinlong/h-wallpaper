@@ -2,12 +2,6 @@
 
 #include <pre.h>
 
-#include <include/core/SkBitmap.h>
-#include <include/core/SkCanvas.h>
-#include <include/core/SkColorSpace.h>
-#include <include/core/SkImage.h>
-#include <include/core/SkSurface.h>
-
 #include "video-decoder.h"
 #include "drawers/drawer.h"
 #include "wallpapers/wallpaper.h"
@@ -110,9 +104,22 @@ public:
      */
     int GetHeight() const;
 
+    /**
+     * 重绘
+     */
     void Redraw();
 
+    /**
+     * 是否已暂停
+     *
+     * @return 是否已暂停
+     */
     bool Paused() const;
 
+    /**
+     * 获取壁纸
+     *
+     * @return 壁纸
+     */
     Wallpaper *GetWallpaper();
 };

@@ -55,7 +55,6 @@ private:
     AVPacket avpkt = {};
     AVFrame *frame = nullptr;
     int stream_index = -1;
-    bool loadedFirstFrame = false;
 
     std::mutex mtx;
     std::condition_variable cv;
@@ -119,19 +118,11 @@ public:
      */
     VideoFrame *getFrame();
 
-    int getFrameCount();
-
     /**
      * @brief 解码器是否正在运行
      * @return 是否正在运行
      */
     bool running() const;
-
-    /**
-     * @brief 解码器是否已经解码第一帧
-     * @return 是否已经解码第一帧
-     */
-    bool firstFrameLoaded() const;
 
     /**
      * @brief 暂停解码

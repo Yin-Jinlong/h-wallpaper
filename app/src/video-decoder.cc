@@ -121,26 +121,6 @@ VideoDecoder::~VideoDecoder() {
 }
 
 
-HBITMAP avframe_to_hbitmap(AVFrame *frame) {
-    HDC hdc = GetDC(nullptr);
-
-    BITMAPINFOHEADER bmiHeader;
-    memset(&bmiHeader, 0, sizeof(BITMAPINFOHEADER));
-    bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmiHeader.biWidth = frame->width;
-    bmiHeader.biHeight = -frame->height; // 注意这里是负数，因为AVFrame的原点在左上角，而GDI的原点在左下角
-    bmiHeader.biPlanes = 1;
-    bmiHeader.biBitCount = 24;
-    bmiHeader.biCompression = BI_RGB;
-
-    HBITMAP hBitmap = CreateDIBSection(hdc, (BITMAPINFO *) &bmiHeader, DIB_RGB_COLORS, NULL, NULL, 0);
-
-    SetDIBits(hdc, hBitmap, 0, frame->height, frame->data[0], (BITMAPINFO *) &bmiHeader, DIB_RGB_COLORS);
-    SelectObject(hdc, hBitmap);
-    ReleaseDC(nullptr, hdc);
-    return hBitmap;
-}
-
 void VideoDecoder::_decode() {
 
     start:
@@ -248,17 +228,9 @@ VideoFrame *VideoDecoder::getFrame() {
     return vf;
 }
 
-int VideoDecoder::getFrameCount() {
-    return frames.size();
-}
-
 bool VideoDecoder::running() const {
     auto thread = threadPtr.load();
     return thread && thread->joinable() && thread->running();
-}
-
-bool VideoDecoder::firstFrameLoaded() const {
-    return loadedFirstFrame;
 }
 
 bool VideoDecoder::paused() const {
@@ -296,7 +268,6 @@ void VideoDecoder::seekTo(double time) {
 void VideoDecoder::waitDecodeNextFrame() {
     try {
         _decode();
-        loadedFirstFrame = true;
     } catch (...) {
         error_not_throw(TEXT("Could not decode first frame"));
     }

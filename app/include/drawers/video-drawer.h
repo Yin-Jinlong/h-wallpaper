@@ -20,6 +20,10 @@ public:
 
     VideoDrawer();
 
+    /**
+     * @brief 设置当前帧
+     * @param frame 帧
+     */
     void SetFrame(VideoFrame *frame);
 
     /**
@@ -30,6 +34,14 @@ public:
      */
     bool Draw(SkCanvas *canvas) override;
 
+    /**
+     * @brief 绘制图片
+     * @param canvas 画布，不能为空
+     * @param image 图片
+     * @param fit 适应
+     * @param paint 画笔
+     * @see ContentFit
+     */
     void DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
 
 };

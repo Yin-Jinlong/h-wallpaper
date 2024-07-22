@@ -4,16 +4,38 @@
 #include "wallpaper.h"
 #include "video-decoder.h"
 
+/**
+ * @brief 视频壁纸
+ * @author YJL
+ */
 class VideoWallpaper : public Wallpaper {
 private:
+    /**
+     * @brief 屏幕参数
+     */
     DEVMODE dm;
 
+    /**
+     * @brief 视频解码器
+     */
     std::atomic<VideoDecoder *> decoderPtr;
+    /**
+     * @brief 视频绘图器
+     */
     VideoDrawer drawer;
 
-    double nowTime;
-    double frameTime;
-    double lastTime;
+    /**
+     * @brief 当前应该播放时间
+     */
+    double nowTime = 0;
+    /**
+     * @brief 当前帧时间
+     */
+    double frameTime = 0;
+    /**
+     * @brief 绘制上一帧的帧时间
+     */
+    double lastTime = 0;
 protected:
 
 

@@ -10,11 +10,24 @@
 
 #include "config.h"
 
+/**
+ * @brief 绘制器，绘制到Canvas上
+ */
 class Drawer {
 protected:
 
+    /**
+     * @brief 宽高比
+     */
     double rate = 0;
-    float width = 0, height = 0;
+    /**
+     * @brief 宽度
+     */
+    float width = 0;
+    /**
+     * @brief 高度
+     */
+    float height = 0;
 
 public:
 
@@ -32,6 +45,11 @@ public:
         return false;
     }
 
+    /**
+     * @brief 设置尺寸
+     * @param width 宽度
+     * @param height 高度
+     */
     void SetSize(int width, int height);
 
 };
