@@ -468,10 +468,12 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             static time_t lastSaveTime = 0;
             // 每5s播放保存一次配置
             // 以免在意外结束进程后丢失播放进度
-            auto nowTime = time(nullptr);
-            if (nowTime - lastSaveTime > 5) {
-                SaveConfig();
-                lastSaveTime = nowTime;
+            if (!wallpaperWindow->Paused()) {
+                auto nowTime = time(nullptr);
+                if (nowTime - lastSaveTime > 5) {
+                    SaveConfig();
+                    lastSaveTime = nowTime;
+                }
             }
             if (HasWindowMaximized()) {
                 if (!wallpaperWindow->Paused())
