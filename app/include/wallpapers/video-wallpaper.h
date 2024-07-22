@@ -22,7 +22,7 @@ public:
 
     ~VideoWallpaper();
 
-    void draw(HDC mdc) override;
+    void draw(SkCanvas *canvas) override;
 
     void Pause() override;
 

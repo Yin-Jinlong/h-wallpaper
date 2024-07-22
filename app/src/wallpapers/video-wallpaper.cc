@@ -71,7 +71,7 @@ double toTime(SYSTEMTIME t) {
 }
 
 
-void VideoWallpaper::draw(HDC mdc) {
+void VideoWallpaper::draw(SkCanvas *canvas) {
 
     SYSTEMTIME now;
     GetSystemTime(&now);
@@ -98,7 +98,7 @@ void VideoWallpaper::draw(HDC mdc) {
     auto dt = av_q2d(decoder->time_base) * vf->duration;
     frameTime += dt;
 
-    if (drawer.Draw(mdc, vf))
+    if (drawer.Draw(canvas, vf))
         requestRedraw();
 }
 

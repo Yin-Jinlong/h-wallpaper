@@ -14,14 +14,9 @@
 
 class Drawer {
 private:
-    sk_sp<SkSurface> surface;
-
-    SkCanvas *canvas = nullptr;
 
     sk_sp<SkImageFilter> pipFilter;
     SkPaint pipPaint;
-
-    BITMAPINFO bmi{0};
 
     float width = 0, height = 0;
 
@@ -33,13 +28,13 @@ public:
 
     /**
      * @brief 绘制帧
-     * @param hdc 内存hdc
+     * @param canvas 画布，不能为空
      * @param frame 帧
      * @return 是否绘制了
      */
-    bool Draw(HDC hdc, VideoFrame *frame);
+    bool Draw(SkCanvas *canvas, VideoFrame *frame);
 
-    void DrawImage(SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
+    void DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
 
     void SetSize(int width, int height);
 };

@@ -4,21 +4,13 @@
 extern HWallpaperConfig config;
 
 Drawer::Drawer() {
-    ZeroMemory(&bmi, sizeof(bmi));
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = 0;
-    bmi.bmiHeader.biHeight = 0;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 24;
-    bmi.bmiHeader.biCompression = BI_RGB;
-
     pipFilter = SkImageFilters::Blur(10, 10, nullptr);
     pipPaint.setImageFilter(pipFilter);
 }
 
 
-bool Drawer::Draw(HDC hdc, VideoFrame *frame) {
-    if (!hdc || !frame)
+bool Drawer::Draw(SkCanvas *canvas, VideoFrame *frame) {
+    if (!frame)
         return false;
 
     SkImageInfo info = SkImageInfo::Make(frame->width, frame->height, kRGBA_8888_SkColorType, kOpaque_SkAlphaType);
@@ -30,26 +22,14 @@ bool Drawer::Draw(HDC hdc, VideoFrame *frame) {
     }
 
     canvas->clear(SK_ColorBLACK);
-    DrawImage(frameBitmap.asImage().get(), config.wallpaper.fit);
-    surface->flush();
-
-    HBITMAP hBitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, nullptr, nullptr, 0);
-    SelectObject(hdc, hBitmap);
-
-    auto pixels = SkImageGetBgr888Pixels(surface->makeImageSnapshot().get());
-
-    if (pixels) {
-        SetDIBits(hdc, hBitmap, 0, height, pixels, &bmi, DIB_RGB_COLORS);
-        free(pixels);
-    }
-    DeleteObject(hBitmap);
+    DrawImage(canvas, frameBitmap.asImage().get(), config.wallpaper.fit);
 
     free(frame->data);
     frame->data = nullptr;
     return true;
 }
 
-void Drawer::DrawImage(SkImage *image, ContentFit fit, SkPaint *paint) {
+void Drawer::DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint) {
 
     auto imgW = (float) image->width();
     auto imgH = (float) image->height();
@@ -117,8 +97,8 @@ void Drawer::DrawImage(SkImage *image, ContentFit fit, SkPaint *paint) {
             break;
         }
         case ContentFit::PIP: {
-            DrawImage(image, ContentFit::CLIP, &pipPaint);
-            DrawImage(image, ContentFit::CONTAIN);
+            DrawImage(canvas, image, ContentFit::CLIP, &pipPaint);
+            DrawImage(canvas, image, ContentFit::CONTAIN);
             break;
         }
         default:
@@ -132,13 +112,4 @@ void Drawer::SetSize(int width, int height) {
     this->width = (float) width;
     this->height = (float) height;
     rate = ((double) width) / height;
-    bmi.bmiHeader.biWidth = width;
-    bmi.bmiHeader.biHeight = -height;
-
-    SkImageInfo info = SkImageInfo::Make(
-            width, height,
-            kRGBA_8888_SkColorType, kOpaque_SkAlphaType
-    );
-    surface = SkSurfaces::Raster(info);
-    canvas = surface->getCanvas();
 }

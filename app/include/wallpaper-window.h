@@ -30,12 +30,18 @@ private:
 
     HWND hWnd;
 
+    BITMAPINFO bmi{0};
+
     std::atomic<Wallpaper *> wallpaperPtr = nullptr;
+
+    sk_sp<SkSurface> surface;
 
     /**
      * 窗口宽高
      */
     int width = 0, height = 0;
+
+    void drawToHdc(HDC hdc);
 
 public:
 

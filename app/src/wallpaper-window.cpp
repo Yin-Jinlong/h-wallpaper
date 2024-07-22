@@ -6,6 +6,7 @@
 #include "string-table.h"
 #include "sys-err.h"
 #include "wallpapers/video-wallpaper.h"
+#include "image-util.h"
 
 #define FIT_MENU_ID_START 100
 
@@ -101,6 +102,7 @@ namespace hww {
 
         HDC mdc = CreateCompatibleDC(hdc);
         wallpaperWindow->paint(mdc);
+
         BitBlt(hdc, 0, 0,
                wallpaperWindow->GetWidth(),
                wallpaperWindow->GetHeight(),
@@ -303,6 +305,14 @@ WallpaperWindow::WallpaperWindow(HINSTANCE hInstance) {
 
     avformat_network_init();
 
+    ZeroMemory(&bmi, sizeof(bmi));
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = 0;
+    bmi.bmiHeader.biHeight = 0;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 24;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
     wallpaperPtr.store(new VideoWallpaper());
 }
 
@@ -337,7 +347,10 @@ void WallpaperWindow::paint(HDC hdc) {
     if (!wallpaper)
         return;
 
-    wallpaper->draw(hdc);
+    auto canvas = surface->getCanvas();
+    wallpaper->draw(canvas);
+
+    drawToHdc(hdc);
 }
 
 void WallpaperWindow::SetSize(int width, int height) {
@@ -346,6 +359,14 @@ void WallpaperWindow::SetSize(int width, int height) {
     auto wallpaper = wallpaperPtr.load();
     if (wallpaper)
         wallpaper->SetSize(width, height);
+
+    bmi.bmiHeader.biWidth = width;
+    bmi.bmiHeader.biHeight = -height;
+    SkImageInfo info = SkImageInfo::Make(
+            width, height,
+            kRGBA_8888_SkColorType, kOpaque_SkAlphaType
+    );
+    surface = SkSurfaces::Raster(info);
 }
 
 void WallpaperWindow::pause() {
@@ -388,6 +409,19 @@ bool WallpaperWindow::Paused() const {
     if (wpp)
         return wpp->Paused();
     return false;
+}
+
+void WallpaperWindow::drawToHdc(HDC hdc) {
+    HBITMAP hBitmap = CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, nullptr, nullptr, 0);
+    SelectObject(hdc, hBitmap);
+
+    auto pixels = SkImageGetBgr888Pixels(surface->makeImageSnapshot().get());
+
+    if (pixels) {
+        SetDIBits(hdc, hBitmap, 0, height, pixels, &bmi, DIB_RGB_COLORS);
+        free(pixels);
+    }
+    DeleteObject(hBitmap);
 }
 
 LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {

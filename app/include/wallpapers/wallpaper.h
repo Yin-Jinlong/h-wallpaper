@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pre.h>
+#include <include/core/SkCanvas.h>
 
 enum WallpaperType {
     WALLPAPER_TYPE_NONE,
@@ -26,7 +27,7 @@ protected:
 public:
     USE_RET WallpaperType Type() const;
 
-    virtual void draw(HDC mdc) {
+    virtual void draw(SkCanvas *canvas) {
 
     }
 
