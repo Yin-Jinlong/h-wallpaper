@@ -11,3 +11,6 @@
 #define IDS_FIT_MENU_CENTER  2008
 #define IDS_FIT_MENU_REPEAT  2009
 #define IDS_FIT_MENU_PIP     2010
+
+#define IDS_CHECK_UPDATE              2011
+#define IDS_CHECK_UPDATE_ON_START     2012

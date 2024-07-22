@@ -4,7 +4,6 @@
 #include "wnd-utils.h"
 #include "string-table.h"
 #include "sys-err.h"
-#include "image-util.h"
 
 #define FIT_MENU_ID_START 100
 
@@ -212,8 +211,8 @@ namespace hww {
         AppendMenu(trayMenu, MF_UNCHECKED, PMID_RUN_ON_STARTUP, GET_CSTR(IDS_RUN_ON_STARTUP));
         AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
 
-        AppendMenu(trayMenu, MF_STRING, PMID_CHECK_UPDATE, L"检查更新");
-        AppendMenu(trayMenu, MF_UNCHECKED, PMID_CHECK_UPDATE_ON_START, L"启动时检查更新");
+        AppendMenu(trayMenu, MF_STRING, PMID_CHECK_UPDATE, GET_CSTR(IDS_CHECK_UPDATE));
+        AppendMenu(trayMenu, MF_UNCHECKED, PMID_CHECK_UPDATE_ON_START, GET_CSTR(IDS_CHECK_UPDATE_ON_START));
         AppendMenu(trayMenu, MF_SEPARATOR, 0, nullptr);
 
         AppendMenu(trayMenu, MF_POPUP, (UINT_PTR) trayFitMenu, GET_CSTR(IDS_FIT_MENU));
