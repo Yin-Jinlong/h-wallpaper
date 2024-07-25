@@ -34,7 +34,7 @@ BYTE *file_read(const std::string &name, size_t &len) {
 }
 
 bool file_write(const std::string &name, char *content, std::streamsize size) {
-    std::ofstream file(name, std::ios::out);
+    std::ofstream file(name, std::ios::out | std::ios::binary);
     if (file.is_open()) {
         file.write(content, size);
         file.close();
