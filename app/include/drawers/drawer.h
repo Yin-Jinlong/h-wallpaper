@@ -15,7 +15,6 @@
  */
 class Drawer {
 protected:
-
     /**
      * @brief 宽高比
      */
@@ -30,7 +29,6 @@ protected:
     float height = 0;
 
 public:
-
     Drawer();
 
     ~Drawer();
@@ -51,5 +49,4 @@ public:
      * @param height 高度
      */
     void SetSize(int width, int height);
-
 };

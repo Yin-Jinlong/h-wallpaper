@@ -1,8 +1,8 @@
 #pragma once
 
 #include "drawers/video-drawer.h"
-#include "wallpaper.h"
 #include "video-decoder.h"
+#include "wallpaper.h"
 
 /**
  * @brief 视频壁纸
@@ -13,7 +13,7 @@ private:
     /**
      * @brief 屏幕参数
      */
-    DEVMODE dm;
+    DEVMODE dm{0};
 
     /**
      * @brief 视频解码器
@@ -36,9 +36,8 @@ private:
      * @brief 绘制上一帧的帧时间
      */
     double lastTime = 0;
+
 protected:
-
-
 public:
     VideoWallpaper();
 

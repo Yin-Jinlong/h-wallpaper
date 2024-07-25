@@ -1,7 +1,7 @@
 #include <pre.h>
 
-#include "wallpaper-window.h"
 #include "sys-err.h"
+#include "wallpaper-window.h"
 #include "wallpapers/video-wallpaper.h"
 
 using namespace std;
@@ -127,4 +127,3 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     delete wallpaperWindow;
     return ERROR_SUCCESS;
 }
-

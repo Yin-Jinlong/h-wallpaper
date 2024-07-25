@@ -1,12 +1,12 @@
-#include <wallpaper-window.h>
 #include <ctime>
+#include <wallpaper-window.h>
 
+#include "image-util.h"
 #include "resources.h"
-#include "wnd-utils.h"
 #include "string-table.h"
 #include "sys-err.h"
 #include "wallpapers/video-wallpaper.h"
-#include "image-util.h"
+#include "wnd-utils.h"
 
 #define FIT_MENU_ID_START 100
 
@@ -15,7 +15,7 @@
 #define PMID_RUN_ON_STARTUP 3
 #define PMID_CHECK_UPDATE 4
 #define PMID_CHECK_UPDATE_ON_START 5
-#define PMID_FIT_MENU(fit) (((int)ContentFit::fit)+FIT_MENU_ID_START)
+#define PMID_FIT_MENU(fit) (((int) ContentFit::fit) + FIT_MENU_ID_START)
 
 #define FIT_MENU_ITEM(fit) checkedFlag(ContentFit::fit), PMID_FIT_MENU(fit)
 #define CHECK_FIT_MENU_ITEM(fit) PMID_FIT_MENU(fit), checkedFlag(ContentFit::fit)
@@ -47,7 +47,7 @@ namespace hww {
         wndClass.hInstance = hInstance;
         wndClass.hIcon = ::LoadIcon(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1));
         wndClass.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
-        wndClass.hbrBackground = (HBRUSH) ::GetStockObject(BLACK_BRUSH);
+        wndClass.hbrBackground = (HBRUSH)::GetStockObject(BLACK_BRUSH);
         wndClass.lpszMenuName = nullptr;
         wndClass.lpszClassName = HWallpaperWindowClassName;
         wndClass.hIconSm = nullptr;
@@ -71,12 +71,12 @@ namespace hww {
 
     void createMapping() {
         hMapFile = CreateFileMapping(
-                INVALID_HANDLE_VALUE,
-                nullptr,
-                PAGE_READWRITE,
-                0,
-                sizeof(double),
-                HW_FM_VIDEO);
+            INVALID_HANDLE_VALUE,
+            nullptr,
+            PAGE_READWRITE,
+            0,
+            sizeof(double),
+            HW_FM_VIDEO);
         if (hMapFile == nullptr) {
             error(TEXT("CreateFileMappingW failed"));
         }
@@ -283,7 +283,7 @@ namespace hww {
             }
         }
     }
-}
+}// namespace hww
 
 using namespace hww;
 
@@ -363,9 +363,8 @@ void WallpaperWindow::SetSize(int width, int height) {
     bmi.bmiHeader.biWidth = width;
     bmi.bmiHeader.biHeight = -height;
     SkImageInfo info = SkImageInfo::Make(
-            width, height,
-            kRGBA_8888_SkColorType, kOpaque_SkAlphaType
-    );
+        width, height,
+        kRGBA_8888_SkColorType, kOpaque_SkAlphaType);
     surface = SkSurfaces::Raster(info);
 }
 
@@ -485,9 +484,8 @@ LRESULT hww::windowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
         case WM_APP_VIDEO_FILE: {
             char *pData = (char *) MapViewOfFile(
-                    hMapFile,
-                    FILE_MAP_READ, 0, 0, 0
-            );
+                hMapFile,
+                FILE_MAP_READ, 0, 0, 0);
             if (pData) {
                 auto len = ((uint16_t *) pData)[0];
                 auto file = new char8_t[len + 1];

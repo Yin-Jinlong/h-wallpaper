@@ -2,25 +2,26 @@
 
 #include <pre-config.h>
 
+#include <windows.h>
+
+#include <commctrl.h>
 #include <cstdint>
 #include <cstdio>
-#include <string>
-#include <windows.h>
-#include <stdexcept>
 #include <exception>
-#include <commctrl.h>
 #include <icu.h>
+#include <stdexcept>
+#include <string>
 
 // windows 宏 与部分c++用法冲突
 
 #ifdef min
-#undef min
-#define Min(a, b) ((a) < (b) ? (a) : (b))
+    #undef min
+    #define Min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
 #ifdef max
-#undef max
-#define Max(a, b) ((a) > (b) ? (a) : (b))
+    #undef max
+    #define Max(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
 // 声明
@@ -35,14 +36,14 @@
 
 #define USE_RET [[nodiscard]]
 
-#define WM_APP_VIDEO_FILE (WM_APP+1)
-#define WM_APP_QUERY_MAXIMIZED (WM_APP+2)
+#define WM_APP_VIDEO_FILE (WM_APP + 1)
+#define WM_APP_QUERY_MAXIMIZED (WM_APP + 2)
 
 #define GET_CSTR(id) GetStr(id).c_str()
 
 
-#include <def.h>
 #include "str-utils.h"
+#include <def.h>
 
 /**
  * @brief 显示错误并抛出异常

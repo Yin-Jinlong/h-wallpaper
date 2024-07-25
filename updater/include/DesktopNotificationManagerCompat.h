@@ -11,9 +11,9 @@
 // ******************************************************************
 
 #pragma once
-#include <string>
-#include <memory>
 #include <Windows.h>
+#include <memory>
+#include <string>
 #include <windows.ui.notifications.h>
 #include <wrl.h>
 #define TOAST_ACTIVATED_LAUNCH_ARG L"-ToastActivated"
@@ -22,8 +22,7 @@ using namespace ABI::Windows::UI::Notifications;
 
 class DesktopNotificationHistoryCompat;
 
-namespace DesktopNotificationManagerCompat
-{
+namespace DesktopNotificationManagerCompat {
     /// <summary>
     /// If not running under the Desktop Bridge, you must call this method to register your AUMID with the Compat library and to
     /// register your COM CLSID and EXE in LocalServer32 registry. Feel free to call this regardless, and we will no-op if running
@@ -41,33 +40,31 @@ namespace DesktopNotificationManagerCompat
     /// <summary>
     /// Creates a toast notifier. You must have called RegisterActivator first (and also RegisterAumidAndComServer if you're a classic Win32 app), or this will throw an exception.
     /// </summary>
-    HRESULT CreateToastNotifier(IToastNotifier** notifier);
+    HRESULT CreateToastNotifier(IToastNotifier **notifier);
 
     /// <summary>
     /// Creates an XmlDocument initialized with the specified string. This is simply a convenience helper method.
     /// </summary>
-    HRESULT CreateXmlDocumentFromString(const wchar_t *xmlString, ABI::Windows::Data::Xml::Dom::IXmlDocument** doc);
+    HRESULT CreateXmlDocumentFromString(const wchar_t *xmlString, ABI::Windows::Data::Xml::Dom::IXmlDocument **doc);
 
     /// <summary>
     /// Creates a toast notification. This is simply a convenience helper method.
     /// </summary>
-    HRESULT CreateToastNotification(ABI::Windows::Data::Xml::Dom::IXmlDocument* content, IToastNotification** notification);
+    HRESULT CreateToastNotification(ABI::Windows::Data::Xml::Dom::IXmlDocument *content, IToastNotification **notification);
 
     /// <summary>
     /// Gets the DesktopNotificationHistoryCompat object. You must have called RegisterActivator first (and also RegisterAumidAndComServer if you're a classic Win32 app), or this will throw an exception.
     /// </summary>
-    HRESULT get_History(std::unique_ptr<DesktopNotificationHistoryCompat>* history);
+    HRESULT get_History(std::unique_ptr<DesktopNotificationHistoryCompat> *history);
 
     /// <summary>
     /// Gets a boolean representing whether http images can be used within toasts. This is true if running under Desktop Bridge.
     /// </summary>
     bool CanUseHttpImages();
-}
+}// namespace DesktopNotificationManagerCompat
 
-class DesktopNotificationHistoryCompat
-{
+class DesktopNotificationHistoryCompat {
 public:
-
     /// <summary>
     /// Removes all notifications sent by this app from action center.
     /// </summary>
@@ -76,7 +73,7 @@ public:
     /// <summary>
     /// Gets all notifications sent by this app that are currently still in Action Center.
     /// </summary>
-    HRESULT GetHistory(ABI::Windows::Foundation::Collections::IVectorView<ToastNotification*>** history);
+    HRESULT GetHistory(ABI::Windows::Foundation::Collections::IVectorView<ToastNotification *> **history);
 
     /// <summary>
     /// Removes an individual toast, with the specified tag label, from action center.

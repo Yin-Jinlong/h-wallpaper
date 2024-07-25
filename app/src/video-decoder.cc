@@ -1,9 +1,9 @@
 #include <video-decoder.h>
 
-#include <thread>
+#include <iomanip>
 #include <ios>
 #include <sstream>
-#include <iomanip>
+#include <thread>
 
 
 class VideoDecoder::DecoderThread : public std::thread {
@@ -17,10 +17,9 @@ private:
     std::condition_variable cv;
 
 public:
-
     explicit DecoderThread(VideoDecoder *decoder) : std::thread([this]() {
-        decodeRun();
-    }) {
+                                                        decodeRun();
+                                                    }) {
         this->decoder = decoder;
     }
 
@@ -123,12 +122,12 @@ VideoDecoder::~VideoDecoder() {
 
 void VideoDecoder::_decode() {
 
-    start:
+start:
     int r = av_read_frame(fmt_ctx, &avpkt);
     if (r >= 0) {
         if (avpkt.stream_index == stream_index) {
             int err;
-            load:
+        load:
             err = avcodec_send_packet(codeCtx, &avpkt);
             if (err == -1094995529)
                 goto start;
@@ -166,9 +165,9 @@ bool VideoDecoder::addFrame() {
     auto width = Min(frame->width, maxWidth);
     auto height = Min(frame->height, maxHeight);
     struct SwsContext *img_convert_ctx = sws_getContext(
-            frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
-            width, height, AV_PIX_FMT_RGBA,
-            SWS_BILINEAR, nullptr, nullptr, nullptr);
+        frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
+        width, height, AV_PIX_FMT_RGBA,
+        SWS_BILINEAR, nullptr, nullptr, nullptr);
 
     if (!img_convert_ctx)
         error(TEXT("Could not initialize the conversion context"));
@@ -192,11 +191,11 @@ bool VideoDecoder::addFrame() {
     memcpy(data, rgbFrame->data[0], size);
 
     struct VideoFrame vf = {
-            .data = data,
-            .width = rgbFrame->width,
-            .height = rgbFrame->height,
-            .pts = rgbFrame->pts,
-            .duration = rgbFrame->duration,
+        .data = data,
+        .width = rgbFrame->width,
+        .height = rgbFrame->height,
+        .pts = rgbFrame->pts,
+        .duration = rgbFrame->duration,
     };
 
 

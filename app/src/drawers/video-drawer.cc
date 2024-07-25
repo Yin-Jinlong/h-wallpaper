@@ -1,5 +1,5 @@
-#include <drawers/video-drawer.h>
 #include "image-util.h"
+#include <drawers/video-drawer.h>
 
 extern HWallpaperConfig config;
 

@@ -1,18 +1,15 @@
-#include <wallpapers/video-wallpaper.h>
 #include "wallpaper-window.h"
+#include <wallpapers/video-wallpaper.h>
 
 extern WallpaperWindow *wallpaperWindow;
 
 
-VideoWallpaper::VideoWallpaper() :
-        Wallpaper(WallpaperType::WALLPAPER_TYPE_VIDEO) {
+VideoWallpaper::VideoWallpaper() : Wallpaper(WallpaperType::WALLPAPER_TYPE_VIDEO) {
     dm.dmSize = sizeof(DEVMODE);
     EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
 }
 
-VideoWallpaper::~VideoWallpaper() {
-
-}
+VideoWallpaper::~VideoWallpaper() = default;
 
 bool VideoWallpaper::SetVideo(const str &file, double seekTime) {
     if (file.empty())
@@ -65,7 +62,6 @@ void VideoWallpaper::Resume() {
 }
 
 void VideoWallpaper::Restart() {
-
 }
 
 double toTime(SYSTEMTIME t) {

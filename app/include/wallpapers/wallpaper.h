@@ -1,7 +1,7 @@
 #pragma once
 
-#include <pre.h>
 #include <include/core/SkCanvas.h>
+#include <pre.h>
 
 /**
  * @brief 壁纸类型
@@ -39,7 +39,6 @@ private:
     WallpaperType type;
 
 protected:
-
     /**
      * @brief 壁纸宽（显示）
      */
@@ -71,35 +70,31 @@ public:
      * @param canvas 画布
      */
     virtual void draw(SkCanvas *canvas) {
-
     }
 
     /**
      * @brief 暂停
      */
     virtual void Pause() {
-
     }
 
     /**
      * @brief 恢复
      */
     virtual void Resume() {
-
     }
 
     /**
      * @brief 重新开始
      */
     virtual void Restart() {
-
     }
 
     /**
      * @brief 是否暂停
      * @return 是否暂停
      */
-    virtual bool Paused() const {
+    USE_RET virtual bool Paused() const {
         return false;
     };
 

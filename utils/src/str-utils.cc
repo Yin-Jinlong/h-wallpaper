@@ -1,6 +1,6 @@
+#include <icu.h>
 #include <str-utils.h>
 #include <windows.h>
-#include <icu.h>
 
 /**
  * wstring 转 string

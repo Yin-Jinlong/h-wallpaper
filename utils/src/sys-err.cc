@@ -9,8 +9,7 @@ str get_error_message(DWORD code) {
             0,
             buffer,
             4096,
-            nullptr
-    ))
+            nullptr))
         return TEXT("");
     str r = buffer;
     delete[] buffer;

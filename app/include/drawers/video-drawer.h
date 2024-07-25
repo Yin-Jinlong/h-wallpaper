@@ -4,20 +4,18 @@
 
 #include <include/effects/SkImageFilters.h>
 
+#include "config.h"
 #include "drawer.h"
 #include "video-decoder.h"
-#include "config.h"
 
 class VideoDrawer : public Drawer {
 private:
-
     sk_sp<SkImageFilter> pipFilter;
     SkPaint pipPaint;
 
     VideoFrame *frame;
 
 public:
-
     VideoDrawer();
 
     /**
@@ -43,5 +41,4 @@ public:
      * @see ContentFit
      */
     void DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
-
 };

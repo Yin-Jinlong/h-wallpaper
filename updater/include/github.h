@@ -1,9 +1,9 @@
 #pragma once
 
+#include <json.h>
+#include <json/json.h>
 #include <pre.h>
 #include <vector>
-#include <json/json.h>
-#include <json.h>
 
 struct GithubUser {
     str login;
@@ -70,24 +70,24 @@ GithubUser Json::Value::as<GithubUser>() const {
         return {};
     }
     return GithubUser{
-            .login = getJsonStr(this, u8"login"),
-            .id = static_cast<uint32_t>(getJsonNumber(this, u8"id")),
-            .node_id = getJsonStr(this, u8"node_id"),
-            .avatar_url = getJsonStr(this, u8"avatar_url"),
-            .gravatar_id = getJsonStr(this, u8"gravatar_id"),
-            .url = getJsonStr(this, u8"url"),
-            .html_url = getJsonStr(this, u8"html_url"),
-            .followers_url = getJsonStr(this, u8"followers_url"),
-            .following_url = getJsonStr(this, u8"following_url"),
-            .gists_url = getJsonStr(this, u8"gists_url"),
-            .starred_url = getJsonStr(this, u8"starred_url"),
-            .subscriptions_url = getJsonStr(this, u8"subscriptions_url"),
-            .organizations_url = getJsonStr(this, u8"organizations_url"),
-            .repos_url = getJsonStr(this, u8"repos_url"),
-            .events_url = getJsonStr(this, u8"events_url"),
-            .received_events_url = getJsonStr(this, u8"received_events_url"),
-            .type = getJsonStr(this, u8"type"),
-            .site_admin = getJsonBool(this, u8"site_admin"),
+        .login = getJsonStr(this, u8"login"),
+        .id = static_cast<uint32_t>(getJsonNumber(this, u8"id")),
+        .node_id = getJsonStr(this, u8"node_id"),
+        .avatar_url = getJsonStr(this, u8"avatar_url"),
+        .gravatar_id = getJsonStr(this, u8"gravatar_id"),
+        .url = getJsonStr(this, u8"url"),
+        .html_url = getJsonStr(this, u8"html_url"),
+        .followers_url = getJsonStr(this, u8"followers_url"),
+        .following_url = getJsonStr(this, u8"following_url"),
+        .gists_url = getJsonStr(this, u8"gists_url"),
+        .starred_url = getJsonStr(this, u8"starred_url"),
+        .subscriptions_url = getJsonStr(this, u8"subscriptions_url"),
+        .organizations_url = getJsonStr(this, u8"organizations_url"),
+        .repos_url = getJsonStr(this, u8"repos_url"),
+        .events_url = getJsonStr(this, u8"events_url"),
+        .received_events_url = getJsonStr(this, u8"received_events_url"),
+        .type = getJsonStr(this, u8"type"),
+        .site_admin = getJsonBool(this, u8"site_admin"),
     };
 }
 

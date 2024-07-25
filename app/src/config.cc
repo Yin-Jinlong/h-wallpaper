@@ -1,10 +1,10 @@
 #include <config.h>
 
 #include <file-utils.h>
-#include <utility>
-#include <vector>
 #include <map>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 HWallpaperConfig config;
 

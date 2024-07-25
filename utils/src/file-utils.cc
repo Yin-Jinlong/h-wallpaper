@@ -1,7 +1,9 @@
 #include <file-utils.h>
 
 bool file_exists(const std::string &name) {
-    struct stat buffer{0};
+    struct stat buffer {
+        0
+    };
     return (stat(name.c_str(), &buffer) == 0);
 }
 

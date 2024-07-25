@@ -1,7 +1,7 @@
 #pragma once
 
-#include <pre.h>
 #include <json/json.h>
+#include <pre.h>
 
 #include "updater-str-util.h"
 

@@ -1,10 +1,9 @@
-#include <wallpapers/wallpaper.h>
 #include <wallpaper-window.h>
+#include <wallpapers/wallpaper.h>
 
 extern WallpaperWindow *wallpaperWindow;
 
 Wallpaper::Wallpaper(WallpaperType type) : type(type) {
-
 }
 
 Wallpaper::~Wallpaper() = default;
@@ -22,4 +21,3 @@ void Wallpaper::SetSize(int width, int height) {
     this->width = width;
     this->height = height;
 }
-

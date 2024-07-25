@@ -14,14 +14,17 @@
 #include <appmodel.h>
 #include <wrl\wrappers\corewrappers.h>
 
-#define RETURN_IF_FAILED(hr) do { HRESULT _hrTemp = hr; if (FAILED(_hrTemp)) { return _hrTemp; } } while (false)
+#define RETURN_IF_FAILED(hr)                     \
+    do {                                         \
+        HRESULT _hrTemp = hr;                    \
+        if (FAILED(_hrTemp)) { return _hrTemp; } \
+    } while (false)
 
 using namespace ABI::Windows::Data::Xml::Dom;
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
 
-namespace DesktopNotificationManagerCompat
-{
+namespace DesktopNotificationManagerCompat {
     HRESULT RegisterComServer(GUID clsid, const wchar_t exePath[]);
     HRESULT EnsureRegistered();
     bool IsRunningAsUwp();
@@ -32,11 +35,9 @@ namespace DesktopNotificationManagerCompat
     bool s_hasCheckedIsRunningAsUwp = false;
     bool s_isRunningAsUwp = false;
 
-    HRESULT RegisterAumidAndComServer(const wchar_t *aumid, GUID clsid)
-    {
+    HRESULT RegisterAumidAndComServer(const wchar_t *aumid, GUID clsid) {
         // If running as Desktop Bridge
-        if (IsRunningAsUwp())
-        {
+        if (IsRunningAsUwp()) {
             // Clear the AUMID since Desktop Bridge doesn't use it, and then we're done.
             // Desktop Bridge apps are registered with platform through their manifest.
             // Their LocalServer32 key is also registered through their manifest.
@@ -60,8 +61,7 @@ namespace DesktopNotificationManagerCompat
         return S_OK;
     }
 
-    HRESULT RegisterActivator()
-    {
+    HRESULT RegisterActivator() {
         // Module<OutOfProc> needs a callback registered before it can be used.
         // Since we don't care about when it shuts down, we'll pass an empty lambda here.
         Module<OutOfProc>::Create([] {});
@@ -79,10 +79,9 @@ namespace DesktopNotificationManagerCompat
         return S_OK;
     }
 
-    HRESULT RegisterComServer(GUID clsid, const wchar_t exePath[])
-    {
+    HRESULT RegisterComServer(GUID clsid, const wchar_t exePath[]) {
         // Turn the GUID into a string
-        OLECHAR* clsidOlechar;
+        OLECHAR *clsidOlechar;
         StringFromCLSID(clsid, &clsidOlechar);
         std::wstring clsidStr(clsidOlechar);
         ::CoTaskMemFree(clsidOlechar);
@@ -105,12 +104,11 @@ namespace DesktopNotificationManagerCompat
             subKey.c_str(),
             nullptr,
             REG_SZ,
-            reinterpret_cast<const BYTE*>(exePathStr.c_str()),
+            reinterpret_cast<const BYTE *>(exePathStr.c_str()),
             dataSize));
     }
 
-    HRESULT CreateToastNotifier(IToastNotifier **notifier)
-    {
+    HRESULT CreateToastNotifier(IToastNotifier **notifier) {
         RETURN_IF_FAILED(EnsureRegistered());
 
         ComPtr<IToastNotificationManagerStatics> toastStatics;
@@ -118,18 +116,14 @@ namespace DesktopNotificationManagerCompat
             HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager).Get(),
             &toastStatics));
 
-        if (s_aumid.empty())
-        {
+        if (s_aumid.empty()) {
             return toastStatics->CreateToastNotifier(notifier);
-        }
-        else
-        {
+        } else {
             return toastStatics->CreateToastNotifierWithId(HStringReference(s_aumid.c_str()).Get(), notifier);
         }
     }
 
-    HRESULT CreateXmlDocumentFromString(const wchar_t *xmlString, IXmlDocument **doc)
-    {
+    HRESULT CreateXmlDocumentFromString(const wchar_t *xmlString, IXmlDocument **doc) {
         ComPtr<IXmlDocument> answer;
         RETURN_IF_FAILED(Windows::Foundation::ActivateInstance(HStringReference(RuntimeClass_Windows_Data_Xml_Dom_XmlDocument).Get(), &answer));
 
@@ -142,8 +136,7 @@ namespace DesktopNotificationManagerCompat
         return answer.CopyTo(doc);
     }
 
-    HRESULT CreateToastNotification(IXmlDocument *content, IToastNotification **notification)
-    {
+    HRESULT CreateToastNotification(IXmlDocument *content, IToastNotification **notification) {
         ComPtr<IToastNotificationFactory> factory;
         RETURN_IF_FAILED(Windows::Foundation::GetActivationFactory(
             HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotification).Get(),
@@ -152,8 +145,7 @@ namespace DesktopNotificationManagerCompat
         return factory->CreateToastNotification(content, notification);
     }
 
-    HRESULT get_History(std::unique_ptr<DesktopNotificationHistoryCompat>* history)
-    {
+    HRESULT get_History(std::unique_ptr<DesktopNotificationHistoryCompat> *history) {
         RETURN_IF_FAILED(EnsureRegistered());
 
         ComPtr<IToastNotificationManagerStatics> toastStatics;
@@ -171,32 +163,25 @@ namespace DesktopNotificationManagerCompat
         return S_OK;
     }
 
-    bool CanUseHttpImages()
-    {
+    bool CanUseHttpImages() {
         return IsRunningAsUwp();
     }
 
-    HRESULT EnsureRegistered()
-    {
+    HRESULT EnsureRegistered() {
         // If not registered AUMID yet
-        if (!s_registeredAumidAndComServer)
-        {
+        if (!s_registeredAumidAndComServer) {
             // Check if Desktop Bridge
-            if (IsRunningAsUwp())
-            {
+            if (IsRunningAsUwp()) {
                 // Implicitly registered, all good!
                 s_registeredAumidAndComServer = true;
-            }
-            else
-            {
+            } else {
                 // Otherwise, incorrect usage, must call RegisterAumidAndComServer first
                 return E_ILLEGAL_METHOD_CALL;
             }
         }
 
         // If not registered activator yet
-        if (!s_registeredActivator)
-        {
+        if (!s_registeredActivator) {
             // Incorrect usage, must call RegisterActivator first
             return E_ILLEGAL_METHOD_CALL;
         }
@@ -204,10 +189,8 @@ namespace DesktopNotificationManagerCompat
         return S_OK;
     }
 
-    bool IsRunningAsUwp()
-    {
-        if (!s_hasCheckedIsRunningAsUwp)
-        {
+    bool IsRunningAsUwp() {
+        if (!s_hasCheckedIsRunningAsUwp) {
             // https://stackoverflow.com/questions/39609643/determine-if-c-application-is-running-as-a-uwp-app-in-desktop-bridge-project
             UINT32 length;
             wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
@@ -218,73 +201,52 @@ namespace DesktopNotificationManagerCompat
 
         return s_isRunningAsUwp;
     }
-}
+}// namespace DesktopNotificationManagerCompat
 
-DesktopNotificationHistoryCompat::DesktopNotificationHistoryCompat(const wchar_t *aumid, ComPtr<IToastNotificationHistory> history)
-{
+DesktopNotificationHistoryCompat::DesktopNotificationHistoryCompat(const wchar_t *aumid, ComPtr<IToastNotificationHistory> history) {
     m_aumid = std::wstring(aumid);
     m_history = history;
 }
 
-HRESULT DesktopNotificationHistoryCompat::Clear()
-{
-    if (m_aumid.empty())
-    {
+HRESULT DesktopNotificationHistoryCompat::Clear() {
+    if (m_aumid.empty()) {
         return m_history->Clear();
-    }
-    else
-    {
+    } else {
         return m_history->ClearWithId(HStringReference(m_aumid.c_str()).Get());
     }
 }
 
-HRESULT DesktopNotificationHistoryCompat::GetHistory(ABI::Windows::Foundation::Collections::IVectorView<ToastNotification*> **toasts)
-{
+HRESULT DesktopNotificationHistoryCompat::GetHistory(ABI::Windows::Foundation::Collections::IVectorView<ToastNotification *> **toasts) {
     ComPtr<IToastNotificationHistory2> history2;
     RETURN_IF_FAILED(m_history.As(&history2));
 
-    if (m_aumid.empty())
-    {
+    if (m_aumid.empty()) {
         return history2->GetHistory(toasts);
-    }
-    else
-    {
+    } else {
         return history2->GetHistoryWithId(HStringReference(m_aumid.c_str()).Get(), toasts);
     }
 }
 
-HRESULT DesktopNotificationHistoryCompat::Remove(const wchar_t *tag)
-{
-    if (m_aumid.empty())
-    {
+HRESULT DesktopNotificationHistoryCompat::Remove(const wchar_t *tag) {
+    if (m_aumid.empty()) {
         return m_history->Remove(HStringReference(tag).Get());
-    }
-    else
-    {
+    } else {
         return m_history->RemoveGroupedTagWithId(HStringReference(tag).Get(), HStringReference(L"").Get(), HStringReference(m_aumid.c_str()).Get());
     }
 }
 
-HRESULT DesktopNotificationHistoryCompat::RemoveGroupedTag(const wchar_t *tag, const wchar_t *group)
-{
-    if (m_aumid.empty())
-    {
+HRESULT DesktopNotificationHistoryCompat::RemoveGroupedTag(const wchar_t *tag, const wchar_t *group) {
+    if (m_aumid.empty()) {
         return m_history->RemoveGroupedTag(HStringReference(tag).Get(), HStringReference(group).Get());
-    }
-    else
-    {
+    } else {
         return m_history->RemoveGroupedTagWithId(HStringReference(tag).Get(), HStringReference(group).Get(), HStringReference(m_aumid.c_str()).Get());
     }
 }
 
-HRESULT DesktopNotificationHistoryCompat::RemoveGroup(const wchar_t *group)
-{
-    if (m_aumid.empty())
-    {
+HRESULT DesktopNotificationHistoryCompat::RemoveGroup(const wchar_t *group) {
+    if (m_aumid.empty()) {
         return m_history->RemoveGroup(HStringReference(group).Get());
-    }
-    else
-    {
+    } else {
         return m_history->RemoveGroupWithId(HStringReference(group).Get(), HStringReference(m_aumid.c_str()).Get());
     }
 }

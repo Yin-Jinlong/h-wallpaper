@@ -1,8 +1,6 @@
 ﻿#include <resources.h>
 
-// @formatter:off
 IDI_ICON1 ICON DISCARDABLE "app_icon.ico"
-// @formatter:on
 
 STRINGTABLE
 {
