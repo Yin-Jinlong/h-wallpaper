@@ -24,7 +24,7 @@ set(OUT_DIR ${CMAKE_BINARY_DIR}/out)
 
 set(PROJECT_VERSION_MAJOR 0)
 set(PROJECT_VERSION_MINOR 1)
-set(PROJECT_VERSION_PATCH 0)
+set(PROJECT_VERSION_PATCH 1)
 set(PROJECT_VERSION_TWEAK ${BUILD_DATE})
 set(VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(VERSION_MINOR ${PROJECT_VERSION_MINOR})
@@ -70,6 +70,7 @@ find_package(ffmpeg)
 find_package(jsoncpp)
 find_package(openssl)
 find_package(skia)
+find_package(uyaml)
 
 
 # 子项目
@@ -120,4 +121,9 @@ install_licenses(openssl
 # skia
 install_licenses(skia
         ${SKIA_HOME}/LICENSE
+)
+
+# uyaml
+install_licenses(unicode_yaml
+        ${UYAML_SRC_DIR}/LICENSE.md
 )

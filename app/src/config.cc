@@ -1,10 +1,12 @@
 #include <config.h>
 
+#define UYAML_USE_STATIC
+
 #include <file-utils.h>
 #include <map>
 #include <sstream>
 #include <utility>
-#include <vector>
+#include <uyaml/uyaml.h>
 
 HWallpaperConfig config;
 
@@ -25,17 +27,17 @@ str strTrim(const str &str, bool start = true, bool end = true) {
         return TEXT("");
     int si = 0, ei = str.size() - 1;
     if (start)
-        while (si <= ei && str[si] == ' ')
+        while (si <= ei && str[si] == ' ' || str[si] == '\r')
             si++;
     if (end)
-        while (si <= ei && str[ei] == ' ')
+        while (si <= ei && str[ei] == ' ' || str[ei] == '\r')
             ei--;
     return str.substr(si, ei - si + 1);
 }
 
 
 void initConfig() {
-    configFile = appPath + "/config";
+    configFile = appPath + "/config.yaml";
     if (!file_exists(configFile)) {
         file_create_empty(configFile);
     }
@@ -45,63 +47,38 @@ void initConfig() {
     u8str u8text(data, data + len);
     free(data);
 
-    std::wistringstream stream(u8str2str(u8text));
-    str line;
-    int lineNumber = 0;
+    auto text = u8str2str(u8text);
 
-    std::map<str, str> map;
-
-    while (std::getline(stream, line)) {
-        lineNumber++;
-        if (line.ends_with('\r'))
-            line = line.substr(0, line.size() - 1);
-        line = strTrim(line);
-        if (line[0] == '#')
-            continue;
-        auto kv = line_get_key_value(line);
-        auto key = strTrim(kv.first);
-        if (key.empty())
-            continue;
-        auto v = strTrim(kv.second);
-        // 转义字符串
-        if (v[0] == '"') {
-            if (v.ends_with('"'))
-                v = v.substr(1, v.size() - 2);
-        }
-        map[key] = v;
+    UYAML::WNode yaml;
+    try {
+        yaml.Parse(text);
+    } catch (std::exception &e) {
+        MessageBoxA(nullptr, e.what(), "Parse config failed", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_DEFAULT_DESKTOP_ONLY);
     }
 
-    config.update.checkOnStart = map[TEXT("update.checkOnStart")] == TEXT("true");
-    config.wallpaper.file = str2u8str(map[TEXT("wallpaper.file")]);
-    config.wallpaper.fit = parse_content_fit(map[TEXT("wallpaper.fit")]);
-    auto ts = map[TEXT("wallpaper.time")];
-    if (ts.empty())
-        ts = TEXT("0");
-    else {
-        int dotCount = 0;
-        for (auto c: ts) {
-            if (c >= '0' && c <= '9')
-                continue;
-            if (c == '.') {
-                dotCount++;
-                if (dotCount > 1)
-                    return;
-            }
-        }
-    }
-    config.wallpaper.time = std::stoi(ts);
+    auto &update = *yaml[L"update"];
+    config.update.checkOnStart = update[L"checkOnStart"]->asBool(true);
+
+    auto &wallpaper = *yaml[L"wallpaper"];
+    auto file = wallpaper[L"file"]->asStr(L"");
+    file = strTrim(file);
+    config.wallpaper.file = str2u8str(file);
+    auto fit = wallpaper[L"fit"]->asStr(TEXT("clip"));
+    config.wallpaper.fit = parse_content_fit(fit);
+    config.wallpaper.time = wallpaper[L"time"]->asFloat(0);
 }
 
 bool SaveConfig() {
-    std::wostringstream out;
-    out << TEXT("update.checkOnStart=") << (config.update.checkOnStart ? TEXT("true") : TEXT("false")) << std::endl;
-    out << TEXT("wallpaper.file=") << u8str2str(config.wallpaper.file) << std::endl;
-    out << TEXT("wallpaper.fit=") << content_fit_to_str(config.wallpaper.fit) << std::endl;
-    out << TEXT("wallpaper.time=") << config.wallpaper.time << std::endl;
+    UYAML::WNode yaml;
+    auto &update = *yaml[L"update"];
+    (*update[L"checkOnStart"]) = config.update.checkOnStart;
+    auto &wallpaper = *yaml[L"wallpaper"];
+    (*wallpaper[L"file"]) = u8str2str(config.wallpaper.file);
+    (*wallpaper[L"fit"]) = content_fit_to_str(config.wallpaper.fit);
+    (*wallpaper[L"time"]) = config.wallpaper.time;
 
-    u8str data = str2u8str(out.str());
-    auto byteCount = strlen(reinterpret_cast<const char *>(data.c_str()));
-    file_write(configFile, (char *) data.c_str(), byteCount);
+    u8str data = str2u8str(yaml.Dump<1>(L"\n"));
+    file_write(configFile, (char *) data.data(), data.length());
     return true;
 }
 

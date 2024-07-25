@@ -43,3 +43,10 @@ libs:
     libs:
       libs/skia-static/:
         - "/"
+  uyaml:
+    type: git
+    url: https://github.com/Yin-Jinlong/unicode-yaml.git
+    tag: v0.1.0-beta1
+    builds:
+      Release:
+      Debug:
