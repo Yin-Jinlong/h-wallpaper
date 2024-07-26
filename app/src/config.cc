@@ -60,12 +60,9 @@ void initConfig() {
     config.update.checkOnStart = update[L"checkOnStart"]->asBool(true);
 
     auto &wallpaper = *yaml[L"wallpaper"];
-    auto file = wallpaper[L"file"]->asStr(L"");
-    file = strTrim(file);
-    config.wallpaper.file = str2u8str(file);
-    auto fit = wallpaper[L"fit"]->asStr(TEXT("clip"));
-    config.wallpaper.fit = parse_content_fit(fit);
-    config.wallpaper.time = wallpaper[L"time"]->asFloat(0);
+    config.wallpaper.file = str2u8str(strTrim(wallpaper[L"file"]->asString()));
+    config.wallpaper.fit = parse_content_fit(wallpaper[L"fit"]->asString());
+    config.wallpaper.time = wallpaper[L"time"]->asFloat();
 }
 
 bool SaveConfig() {
@@ -101,7 +98,7 @@ ContentFit parse_content_fit(const str &fit) {
     if (fit == TEXT("pip")) {
         return ContentFit::PIP;
     }
-    return ContentFit::CLIP;
+    return ContentFit::PIP;
 }
 
 str content_fit_to_str(ContentFit fit) {
@@ -119,5 +116,5 @@ str content_fit_to_str(ContentFit fit) {
         case ContentFit::PIP:
             return TEXT("pip");
     }
-    return TEXT("clip");
+    return TEXT("pip");
 }
