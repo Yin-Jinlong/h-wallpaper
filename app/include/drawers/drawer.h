@@ -16,10 +16,6 @@
 class Drawer {
 protected:
     /**
-     * @brief 宽高比
-     */
-    double rate = 0;
-    /**
      * @brief 宽度
      */
     float width = 0;

@@ -4,16 +4,37 @@
 
 #include <include/effects/SkImageFilters.h>
 
+#include <map>
+
 #include "config.h"
 #include "drawer.h"
 #include "video-decoder.h"
+
+typedef void (*DrawImageFn)(SkCanvas *, SkImage *, SkPaint *);
 
 class VideoDrawer : public Drawer {
 private:
     sk_sp<SkImageFilter> pipFilter;
     SkPaint pipPaint;
 
-    VideoFrame *frame;
+    VideoFrame *frame = nullptr;
+
+    const std::map<ContentFit, DrawImageFn> drawFnMap = {
+        {ContentFit::CLIP, drawImageClip},
+        {ContentFit::CONTAIN, drawImageContain},
+        {ContentFit::STRETCH, drawImageStretch},
+        {ContentFit::CENTER, drawImageCenter},
+        {ContentFit::REPEAT, drawImageRepeat},
+        {ContentFit::PIP, drawImagePip},
+    };
+
+private:
+    static void drawImageClip(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageContain(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageStretch(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageCenter(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageRepeat(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImagePip(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
 
 public:
     VideoDrawer();
