@@ -31,15 +31,15 @@ libs:
       Debug:
   skia:
     type: zip
-    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/vm115/skia-m115-default-shared-release.zip
-    download-name: skia-m115-default-shared-release.zip
+    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/vm127/skia-m127-default-shared-release.zip
+    download-name: skia-m127-default-shared-release.zip
     libs:
       libs/skia/:
         - "/"
   skia-static:
     type: zip
-    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/vm115/skia-m115-default-static-release.zip
-    download-name: skia-m115-default-static-release.zip
+    url: https://github.com/Yin-Jinlong/skia-prebuild-for-windows/releases/download/vm127/skia-m127-default-static-release.zip
+    download-name: skia-m127-default-static-release.zip
     libs:
       libs/skia-static/:
         - "/"

@@ -49,6 +49,7 @@ add_executable(${PROJECT_NAME} WIN32
 if (${DEBUG})
     set(SKIA_LIB_NAMES
             skia.dll.lib
+            opengl32
     )
     set(SKIA_DLLS
             "${SKIA_BIN_DIR}/skia.dll"
