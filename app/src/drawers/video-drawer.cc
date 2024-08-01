@@ -115,7 +115,7 @@ void VideoDrawer::drawImagePip(SkCanvas *canvas, float width, float height, SkIm
     auto rate = width / height;
     auto imgRate = ((float) image->width()) / image->height();
     if (abs(rate - imgRate) < 1e-3) {
-        VideoDrawer::drawImageStretch(canvas, width, height, image, paint);
+        VideoDrawer::drawImageStretch(canvas, width, height, image, nullptr);
         return;
     }
     drawImageClip(canvas, width, height, image, paint);
@@ -128,7 +128,7 @@ void VideoDrawer::DrawImage(SkCanvas *canvas, float width, float height, SkImage
     if (fit == ContentFit::PIP)
         fn(canvas, width, height, image, &pipPaint);
     else
-        fn(canvas, width, height, image, paint);
+        fn(canvas, width, height, image, nullptr);
 }
 
 void VideoDrawer::SetFrame(VideoFrame *frame) {
