@@ -21,16 +21,16 @@ bool VideoDrawer::Draw(SkCanvas *canvas) {
     }
 
     canvas->clear(SK_ColorBLACK);
-    DrawImage(canvas, frameBitmap.asImage().get(), config.wallpaper.fit);
+    auto width = (float) canvas->getSurface()->width();
+    auto height = (float) canvas->getSurface()->height();
+    DrawImage(canvas, width, height, frameBitmap.asImage().get(), config.wallpaper.fit);
 
     free(frame->data);
     frame->data = nullptr;
     return true;
 }
 
-void VideoDrawer::drawImageClip(SkCanvas *canvas, SkImage *image, SkPaint *paint) {
-    auto width = (float) canvas->getSurface()->width();
-    auto height = (float) canvas->getSurface()->height();
+void VideoDrawer::drawImageClip(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint) {
     auto rate = width / height;
 
     SkRect dst(0, 0, 0, 0);
@@ -54,9 +54,7 @@ void VideoDrawer::drawImageClip(SkCanvas *canvas, SkImage *image, SkPaint *paint
     }
     canvas->drawImageRect(image, dst, SkSamplingOptions(), paint);
 }
-void VideoDrawer::drawImageContain(SkCanvas *canvas, SkImage *image, SkPaint *paint) {
-    auto width = (float) canvas->getSurface()->width();
-    auto height = (float) canvas->getSurface()->height();
+void VideoDrawer::drawImageContain(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint) {
     auto rate = width / height;
 
     SkRect dst(0, 0, 0, 0);
@@ -81,18 +79,12 @@ void VideoDrawer::drawImageContain(SkCanvas *canvas, SkImage *image, SkPaint *pa
     canvas->drawImageRect(image, dst, SkSamplingOptions(), paint);
 }
 
-void VideoDrawer::drawImageStretch(SkCanvas *canvas, SkImage *image, SkPaint *paint) {
-    auto width = (float) canvas->getSurface()->width();
-    auto height = (float) canvas->getSurface()->height();
-
+void VideoDrawer::drawImageStretch(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint) {
     SkRect dst(0, 0, width, height);
     canvas->drawImageRect(image, dst, SkSamplingOptions(), paint);
 }
 
-void VideoDrawer::drawImageCenter(SkCanvas *canvas, SkImage *image, SkPaint *paint) {
-    auto width = (float) canvas->getSurface()->width();
-    auto height = (float) canvas->getSurface()->height();
-
+void VideoDrawer::drawImageCenter(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint) {
     auto imgW = (float) image->width();
     auto imgH = (float) image->height();
     SkRect dst(0, 0, imgW, imgH);
@@ -102,10 +94,7 @@ void VideoDrawer::drawImageCenter(SkCanvas *canvas, SkImage *image, SkPaint *pai
     canvas->drawImageRect(image, dst, SkSamplingOptions(), paint);
 }
 
-void VideoDrawer::drawImageRepeat(SkCanvas *canvas, SkImage *image, SkPaint *paint) {
-    auto width = (float) canvas->getSurface()->width();
-    auto height = (float) canvas->getSurface()->height();
-
+void VideoDrawer::drawImageRepeat(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint) {
     auto imgW = (float) image->width();
     auto imgH = (float) image->height();
 
@@ -122,18 +111,24 @@ void VideoDrawer::drawImageRepeat(SkCanvas *canvas, SkImage *image, SkPaint *pai
     }
 }
 
-void VideoDrawer::drawImagePip(SkCanvas *canvas, SkImage *image, SkPaint *paint) {
-    drawImageClip(canvas, image, paint);
-    drawImageContain(canvas, image);
+void VideoDrawer::drawImagePip(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint) {
+    auto rate = width / height;
+    auto imgRate = ((float) image->width()) / image->height();
+    if (abs(rate - imgRate) < 1e-3) {
+        VideoDrawer::drawImageStretch(canvas, width, height, image, paint);
+        return;
+    }
+    drawImageClip(canvas, width, height, image, paint);
+    drawImageContain(canvas, width, height, image);
 }
 
 
-void VideoDrawer::DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint) {
+void VideoDrawer::DrawImage(SkCanvas *canvas, float width, float height, SkImage *image, ContentFit fit, SkPaint *paint) {
     auto fn = drawFnMap.at(fit);
     if (fit == ContentFit::PIP)
-        fn(canvas, image, &pipPaint);
+        fn(canvas, width, height, image, &pipPaint);
     else
-        fn(canvas, image, paint);
+        fn(canvas, width, height, image, paint);
 }
 
 void VideoDrawer::SetFrame(VideoFrame *frame) {

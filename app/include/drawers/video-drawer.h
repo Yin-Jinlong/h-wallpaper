@@ -10,7 +10,7 @@
 #include "drawer.h"
 #include "video-decoder.h"
 
-typedef void (*DrawImageFn)(SkCanvas *, SkImage *, SkPaint *);
+typedef void (*DrawImageFn)(SkCanvas *, float, float, SkImage *, SkPaint *);
 
 class VideoDrawer : public Drawer {
 private:
@@ -29,12 +29,12 @@ private:
     };
 
 private:
-    static void drawImageClip(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
-    static void drawImageContain(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
-    static void drawImageStretch(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
-    static void drawImageCenter(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
-    static void drawImageRepeat(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
-    static void drawImagePip(SkCanvas *canvas, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageClip(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageContain(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageStretch(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageCenter(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImageRepeat(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint = nullptr);
+    static void drawImagePip(SkCanvas *canvas, float width, float height, SkImage *image, SkPaint *paint = nullptr);
 
 public:
     VideoDrawer();
@@ -61,5 +61,5 @@ public:
      * @param paint 画笔
      * @see ContentFit
      */
-    void DrawImage(SkCanvas *canvas, SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
+    void DrawImage(SkCanvas *canvas, float width, float height, SkImage *image, ContentFit fit, SkPaint *paint = nullptr);
 };
